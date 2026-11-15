@@ -14,7 +14,7 @@ use x86_64::{
 };
 
 extern crate alloc;
-use alloc::vec;
+
 
 /// Start address of the kernel heap.
 pub const HEAP_START: usize = 0x_4444_4444_0000;
@@ -130,6 +130,13 @@ pub struct AllocatorBenchmarkMetrics {
     pub oom_handled_ok: bool,
 }
 
+#[repr(align(16))]
+pub struct BenchmarkBuffer(pub [u8; 32 * 1024]);
+
+/// Dedicated static buffer in BSS section for allocator benchmarking.
+/// Prevents fragmentation or competition with the primary kernel heap.
+static TEST_HEAP_BUFFER: spin::Mutex<BenchmarkBuffer> = spin::Mutex::new(BenchmarkBuffer([0u8; 32 * 1024]));
+
 /// Run an empirical benchmark evaluating allocation latency, fragmentation, and memory reuse.
 pub fn benchmark_allocator_comparison() -> (AllocatorBenchmarkMetrics, AllocatorBenchmarkMetrics) {
     const BLOCK_COUNT: usize = 100;
@@ -144,9 +151,12 @@ pub fn benchmark_allocator_comparison() -> (AllocatorBenchmarkMetrics, Allocator
         };
     }
 
-    const TEST_HEAP_SIZE: usize = 32 * 1024; // 32 KiB dedicated heap buffer
-    let mut test_buffer = vec![0u8; TEST_HEAP_SIZE];
-    let buffer_base = test_buffer.as_mut_ptr() as usize;
+    const TEST_HEAP_SIZE: usize = 32 * 1024; // 32 KiB dedicated buffer
+    let mut buffer_guard = TEST_HEAP_BUFFER.lock();
+    for b in buffer_guard.0.iter_mut() {
+        *b = 0;
+    }
+    let buffer_base = buffer_guard.0.as_mut_ptr() as usize;
 
     // =========================================================================
     // 1. Benchmark Intrusive Linked List Allocator
@@ -218,7 +228,7 @@ pub fn benchmark_allocator_comparison() -> (AllocatorBenchmarkMetrics, Allocator
     // =========================================================================
     // 2. Benchmark Bump Allocator (using fresh reinitialized buffer)
     // =========================================================================
-    for b in test_buffer.iter_mut() {
+    for b in buffer_guard.0.iter_mut() {
         *b = 0;
     }
 

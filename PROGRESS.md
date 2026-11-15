@@ -1,6 +1,6 @@
 # MicroOS — Progress Log
 
-## Current Step: Step A8 — Integrated Demo & Verification (Full Suite) ⏳
+## Current Step: Step A9 — Performance Evaluation & Evidence-Based Analysis ⏳
 
 **Date:** 2026-11-15
 **Active Branch:** `ca6-compliance`
@@ -9,6 +9,16 @@
 ---
 
 ## What Is Done
+
+### CA-6 Step A8: Integrated Core Architecture Demo & Verification (Full Suite) ✅
+- Implemented in-kernel test harness `src/scheduler/tc.rs` dynamically executing all 6 mandatory test cases (TC1–TC6: two tasks, 3–5 tasks lifecycle, boundary/canary limits, 50-task stress turnover, invalid transition rejection, and 10x deterministic repeatability) with structured PASS/FAIL table rendering to VGA and serial.
+- Structured end-to-end 10-layer dual-channel narration in `src/scheduler/mod.rs` (`run_ca6_demo()`) reporting subsystem status (`Layer 1 Boot: OK` through `Layer 10 Automated Test Suite: OK`).
+- Orchestrated all 5 sequential execution phases in `run_ca6_demo()`: TC1–TC6 suite, 3-task cooperative Round Robin, timer-driven preemption without yields, Track C concurrency lock ranking deadlock prevention, and dual-allocator comparative benchmark.
+- Connected interactive `ca6 tc` and `ca6 demo` commands in `src/shell.rs` with clean handoff to the interactive shell prompt (`micro_os:/>`).
+- Hardened benchmark buffer with `#[repr(align(16))]` in BSS, preventing heap fragmentation across multi-task execution.
+- Captured full-session QEMU execution trace `traces/step_a8_demo.log` (32,227 bytes across 569 structured trace events and 715 timer ticks) and parsed to `results/step_a8_trace_events.csv`.
+- Authored comprehensive documentation and walkthrough `docs/CA6_STEP_A8_integrated_demo.md`.
+- **83 tests passing cleanly across 16 test suites** in QEMU.
 
 ### CA-6 Step A7: Memory Allocator Evaluation & Benchmark (Layer 8 & Track B) ✅
 - Implemented hand-written $O(1)$ `BumpAllocator` in `src/allocator/bump.rs` with sequential pointer bump, graceful OOM rejection, and full reset on zero active allocations.

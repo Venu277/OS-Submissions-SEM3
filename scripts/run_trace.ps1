@@ -42,12 +42,12 @@ Write-Host "[QEMU] Starting QEMU execution with serial output to $traceFile..." 
 
 $qemuArgs = @(
     "-drive", "format=raw,file=$binPath",
-    "-serial", "file:$traceFile",
+    "-serial", "stdio",
     "-display", "none",
     "-drive", "format=raw,file=disk.img,if=ide,index=1,media=disk"
 )
 
-$p = Start-Process -FilePath "qemu-system-x86_64" -ArgumentList $qemuArgs -PassThru
+$p = Start-Process -FilePath "qemu-system-x86_64" -ArgumentList $qemuArgs -RedirectStandardOutput $traceFile -PassThru
 
 Write-Host "[TRACE] Collecting trace data for $DurationSeconds seconds..." -ForegroundColor Green
 Start-Sleep -Seconds $DurationSeconds

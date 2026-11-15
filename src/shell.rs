@@ -1418,15 +1418,7 @@ fn cmd_ca6(args: &[&str]) {
             serial_println!("[CA6] 'ca6 tasks' roster printed.");
         }
         "tc" => {
-            println!("Running CA-6 Required Test Cases (TC1 - TC6):");
-            println!("  TC1 (Two Tasks Queueing):            [PASS]");
-            println!("  TC2 (3-5 Tasks Lifecycle):           [PASS]");
-            println!("  TC3 (Boundary Case / Canary Guard):  [PASS]");
-            println!("  TC4 (Stress Enqueue / Dequeue):      [PASS]");
-            println!("  TC5 (Failure Case / Invalid State):  [PASS]");
-            println!("  TC6 (Repeatability 10x Invariant):   [PASS]");
-            println!("All TC1-TC6 test cases verified against CA-6 Layer 3 & 4 specification.");
-            serial_println!("[CA6] TC1-TC6 validation suite executed successfully.");
+            crate::scheduler::tc::run_tc_suite();
         }
         unknown => {
             println!("ca6: unknown action '{}'. Usage: ca6 <demo|status|trace|tasks|tc|preempt|sync|alloc>", unknown);
