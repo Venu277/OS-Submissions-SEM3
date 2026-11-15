@@ -1,6 +1,6 @@
 # MicroOS — Progress Log
 
-## Current Step: Step A9 — Performance Evaluation & Evidence-Based Analysis ⏳
+## Current Step: Step A10 — Final Submission Package & Viva Preparation ⏳
 
 **Date:** 2026-11-15
 **Active Branch:** `ca6-compliance`
@@ -9,6 +9,18 @@
 ---
 
 ## What Is Done
+
+### CA-6 Step A9: Performance Evaluation & Evidence-Based Analysis ✅
+- Upgraded `scripts/parse_trace.py` with multi-dimensional performance metric aggregation across 6 core areas: boot times, context switches, preemption latency, synchronization contention, memory allocator latency/reuse, and Track C deadlock prevention.
+- Generated comprehensive summary table in `results/summary_table.csv` and structured JSON dataset in `results/trace_metrics.json`.
+- Generated 4 publication-quality evaluation figures in `results/plots/`:
+  - `results/plots/context_switches.png`: Reason distribution (`yield` 65.4%, `terminate` 26.9%, `quantum` 7.7%).
+  - `results/plots/memory_distribution.png`: Dual-panel comparative analysis of cycle latency (Bump 5.03x faster) and memory reclamation (Linked List 100% vs Bump 0%).
+  - `results/plots/lock_metrics.png`: Spinlock contention, spin loops waited (max 31,520 spins), and hold durations.
+  - `results/plots/trace_timeline.png`: Scatter plot of all 569 events across 715 PIT timer ticks.
+- Recorded full raw dataset and analytical metrics in `results/PERFORMANCE_DATA.md`.
+- Authored comprehensive architectural evaluation report `docs/CA6_STEP_A9_performance_evaluation.md`.
+- **83 tests passing cleanly across 16 test suites** in QEMU.
 
 ### CA-6 Step A8: Integrated Core Architecture Demo & Verification (Full Suite) ✅
 - Implemented in-kernel test harness `src/scheduler/tc.rs` dynamically executing all 6 mandatory test cases (TC1–TC6: two tasks, 3–5 tasks lifecycle, boundary/canary limits, 50-task stress turnover, invalid transition rejection, and 10x deterministic repeatability) with structured PASS/FAIL table rendering to VGA and serial.
