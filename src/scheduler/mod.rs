@@ -538,6 +538,7 @@ pub fn run_ca6_demo() {
     demo_three_tasks_round_robin();
     demo_preemptive_scheduling();
     crate::sync::demo_synchronization();
+    crate::allocator::demo_memory_allocator();
 }
 
 #[cfg(test)]

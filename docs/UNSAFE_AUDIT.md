@@ -23,6 +23,8 @@
 | **U-07** | `src/scheduler/mod.rs` | 231 | Invoke assembly `switch_context` during thread exit `exit_current_thread()`. | Outgoing thread marked `Terminated`, incoming thread marked `Running`, valid stack pointers restored. | `round_robin_switch` task completion and reaping test. |
 | **U-08** | `src/interrupts.rs` | 118 | Write command byte and 16-bit divisor to PIT 8253 I/O ports 0x43 and 0x40. | Writing valid mode 0x34 and divisor clamped to `[1, 65535]`; does not touch unmapped memory. | 100 Hz timer tick frequency verified in QEMU PIT IRQ0 handler. |
 | **U-09** | `src/scheduler/mod.rs` | 300 | Invoke assembly `switch_context` during involuntary timer preemption `timer_tick()`. | `prev_ptr` and `next_ptr` point to valid heap-pinned `CpuContext` structs. Executed in interrupt context (IF=0). | `tests/preemptive_scheduling.rs` compute-bound preemption test. |
+| **U-10** | `src/allocator/bump.rs` | 35, 63 | Initialize bump bounds and reset bump pointer on complete deallocation. | Memory range `[heap_start .. heap_start + heap_size]` is mapped and unused. Raw dealloc does not free invalid memory. | `alloc::2_bump_allocator_sequential_and_reset`, `tests/allocator_benchmark.rs`. |
+| **U-11** | `src/allocator.rs` | 156, 170, 227 | Benchmark dual allocators in dedicated 32 KiB test heap buffer and measure cycle latencies via `_rdtsc()`. | Test buffer is dynamically allocated on kernel heap; pointer arithmetic bounded to `[buffer_base .. buffer_base + 32KiB]`. | `alloc::4_benchmark_100_blocks_comparison`, `tests/allocator_benchmark.rs`. |
 
 ---
 

@@ -105,3 +105,7 @@ harness = false
 [[test]]
 name = "concurrency_sync"
 harness = false
+
+[[test]]
+name = "allocator_benchmark"
+harness = false

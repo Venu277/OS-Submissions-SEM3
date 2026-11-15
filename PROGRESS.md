@@ -1,6 +1,6 @@
 # MicroOS — Progress Log
 
-## Current Step: Step A7 — Memory Allocator Evaluation & Benchmark (Layer 8) ⏳
+## Current Step: Step A8 — Integrated Demo & Verification (Full Suite) ⏳
 
 **Date:** 2026-11-15
 **Active Branch:** `ca6-compliance`
@@ -9,6 +9,17 @@
 ---
 
 ## What Is Done
+
+### CA-6 Step A7: Memory Allocator Evaluation & Benchmark (Layer 8 & Track B) ✅
+- Implemented hand-written $O(1)$ `BumpAllocator` in `src/allocator/bump.rs` with sequential pointer bump, graceful OOM rejection, and full reset on zero active allocations.
+- Extended global memory allocator in `src/allocator.rs` with `ALLOC_TRACING_ENABLED` atomic toggle and structured trace emission (`ALLOC` and `DEALLOC`).
+- Designed and executed 100-block comparative empirical benchmark (`benchmark_allocator_comparison`) evaluating latency, fragmentation, and out-of-order deallocation reuse between `LinkedListAllocator` and `BumpAllocator`.
+- Added interactive `ca6 alloc` CLI command to `src/shell.rs` and integrated allocator evaluation into `run_ca6_demo()`.
+- Created automated integration test suite `tests/allocator_benchmark.rs` covering basic alloc/dealloc, sequential bump, OOM rejection, and 100-block comparative benchmark.
+- Documented unsafe operations in `docs/UNSAFE_AUDIT.md` (U-10, U-11).
+- Captured real QEMU execution trace `traces/step_a7_alloc.log` (20,467 bytes, 414 events) and parsed to `results/step_a7_trace_events.csv`.
+- Authored `docs/CA6_STEP_A7_memory_allocator.md`.
+- **83 tests passing cleanly across 16 test suites** in QEMU.
 
 ### CA-6 Step A6: Synchronization & Track C Concurrency Specialization (Layer 7) ✅
 - Enhanced hand-written `Spinlock<T>` with lock naming, atomic CAS, spin loop counter (`spins_waited`, `max_spins`), hold-time measurement (`hold_ticks`), RAII `Deref`/`DerefMut`, and diagnostic tracing (`LOCK_ACQ`, `LOCK_REL`, `LOCK_WAIT`).
