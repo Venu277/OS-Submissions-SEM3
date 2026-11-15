@@ -1,73 +1,46 @@
 # MicroOS — Progress Log
 
-## Current Step: Step 11 — Final Release Integration & Presentation ✅
+## Current Step: Step A2 — Kernel Diagnostics & Structured Tracing (Layer 2) ⏳
 
 **Date:** 2026-11-15
+**Active Branch:** `ca6-compliance`
+**Specification:** CA-6 Flagship Engineering Project (15 Marks)
 
 ---
 
 ## What Is Done
 
-### Step 0: Baseline & Hygiene ✅
-- Verified toolchain, custom target, QEMU runner, and fixed duplicate `_start` bug.
-- Established documentation (`README.md`, `PROGRESS.md`, `BOOT_TIMES.md`, `docs/STEP_00_baseline.md`).
-- Target laptop hardware profiled in `laptop_hardware.txt`.
+### CA-6 Step A0: Read-Only Audit & Gap Analysis ✅
+- Audited entire workspace against CA-6 university assignment (Sections 1–45).
+- Verified root stray `micro_os` git submodule, allocator source, synchronization, CPUID/ACPI/NVMe/UEFI status, package execution, and `laptop_hardware.txt`.
+- Generated `docs/CA6_GAP_ANALYSIS.md` (17 KB) covering all 10 core requirements, 7 specialization tracks, TC1–TC6, and final submission checklist.
+- Confirmed async executor does not satisfy CA-6 preemptive kernel thread requirements; planned dedicated `kthread`, `scheduler`, and `sync` modules.
 
-### Step 1: Robust Interrupts ✅
-- GDT & TSS with 20 KiB dedicated IST stack for double faults.
-- Remapped 8259 PIC to vectors 32 and 40.
-- Timer IRQ0 tick accounting and keyboard IRQ1 with wait-free, lock-free SPSC scancode ring buffer.
-- Dynamic PIT Channel 2 TSC frequency calibration.
-- Verified with integration test `stack_overflow.rs`.
+### CA-6 Step A1: Restructuring & CA-6 Core Build Mode ✅
+- Removed obsolete `micro_os` root entry.
+- Established Section 22 layout: added `src/kthread/`, `src/scheduler/`, `src/sync/`, `traces/`, `results/`, `docs/UNSAFE_AUDIT.md`.
+- Implemented `KThread` with `ThreadId`, `ThreadState` (Ready, Running, Blocked, Terminated), System V ABI `CpuContext`, and 16 KiB kernel stack.
+- Implemented `ReadyQueue` (FIFO deque) and `RoundRobinScheduler`.
+- Implemented hand-written interrupt-safe atomic `Spinlock<T>` with contention statistics and strict hierarchy `RankedLock<T>` (Track C Deadlock Prevention).
+- Integrated `ca6 demo` and `ca6 status` shell commands into `src/shell.rs`.
+- Added `ca6-core` boot mode to `Cargo.toml` and `src/main.rs` bypassing network/storage drivers for pure core execution (boot time: 190.479 ms).
+- Created end-to-end integration test `tests/ca6_demo.rs` and documented all `unsafe` blocks in `docs/UNSAFE_AUDIT.md`.
+- Authored `docs/CA6_STEP_A1_restructure_and_core_build.md`.
+- **58 tests passing cleanly across 11 test suites** in QEMU.
 
-### Step 2: Memory Management ✅
-- Enabled physical memory mapping via `bootloader` feature `map_physical_memory`.
-- Migrated to type-safe `entry_point!(kernel_main)` accepting `&'static BootInfo`.
-- Initialized 4-level paging via `OffsetPageTable` and implemented `BootInfoFrameAllocator`.
-- Mapped 100 KiB heap at `0x_4444_4444_0000` with custom `LinkedListAllocator` (expanded to 256 KiB in Step 4).
-- Enabled `alloc` crate for `Box`, `Vec`, and `String`. Verified with `tests/heap_allocation.rs`.
-
-### Step 3: Tasks, Keyboard Input & Interactive Shell ✅
-- **Async Task Runtime**: Implemented `Task` with unique `TaskId` and cooperative `Executor` supporting wakers and CPU power saving via `enable_and_hlt()`.
-- **Async Keyboard Stream**: Implemented `ScancodeStream` with `next_scancode().await`, woken automatically on PS/2 keyboard IRQ1.
-- **CMOS RTC & System Clock**: Implemented `src/rtc.rs` reading ports `0x70`/`0x71` with BCD decoding (`DateTime`), and calculated uptime from PIT timer ticks.
-- **Interactive Shell**: Built command prompt (`micro_os> `) with line editing and Backspace support.
-- **Built-in Commands**: `help`, `clear`, `echo`, `uptime`, `meminfo`, `bootime`, `date`, `reboot` (8042 reset), and `shutdown` (ACPI/QEMU power-off).
-- **Boot Target Achieved**: Booted directly to interactive prompt; measured boot time: **54.341 ms**.
-
-### Step 4: Storage & File System (MicroFS) ✅
-- **PCI Bus Enumeration (`src/pci.rs`)**: Scans 256 buses, 32 devices, 8 functions for class `0x01` (Mass Storage), identifying IDE controllers (`0x0101`).
-- **ATA PIO Driver (`src/storage/ata.rs`)**: Implemented LBA28 sector read/write for Primary/Secondary Master/Slave over I/O ports `0x1F0`/`0x170`. Disabled hardware interrupts via Device Control Register (`nIEN = 1`) and added safety IRQ 14/15 handlers in IDT.
-- **Block Device Trait & RamDisk (`src/storage/mod.rs`)**: Abstract `BlockDevice` trait allowing hot-swapping between physical ATA drives and RAM-backed disks.
-- **On-Disk Filesystem (`src/fs/microfs.rs`)**: Ext2-style on-disk filesystem with `Superblock`, Inode bitmap, Block bitmap, 256-inode table (64 bytes/inode), Directory entries, 10 direct blocks, and 1 indirect block (supporting up to 69 KiB files).
-- **Virtual File System Layer (`src/fs/vfs.rs`)**: Path resolution, current working directory tracking, `mount`, `format`, directory traversal (`..`), file creation, reading, writing, and deletion.
-- **Shell Commands**: Integrated `lspci`, `df`, `mkfs`, `ls`, `cd`, `pwd`, `mkdir`, `touch`, `write`, `cat`, and `rm`.
-- **Reboot Persistence Verified**: Created and verified integration test `tests/filesystem.rs` proving persistent storage across unmount/remount sessions.
-- **Test Suite**: 22/22 tests passing cleanly across all targets.
-
-### Step 5: Packaging: Bootable ISO & VMware ✅
-- **Packaging Pipeline (`scripts/package.ps1` & `scripts/package.sh`)**: End-to-end automated compilation, bootimage creation, and virtual disk generation.
-- **VMware VMDK Generation**: Converted `bootimage-micro_os.bin` and `disk.img` into `micro_os.vmdk` and `data.vmdk` using `qemu-img convert`.
-- **El Torito ISO Generation**: Produced `build/micro_os.iso` via WSL `xorriso`. Documented why VMDK hard disk format is the primary, reliable boot path for VMware and QEMU.
-- **VMware Virtual Machine Specification (`vmware/micro_os.vmx`)**: Created production configuration for VMware Workstation/Player with Primary IDE Master OS disk, Primary IDE Slave data disk, serial port debugging, and Intel e1000 NIC.
-- **Verification**: Verified booting from `micro_os.vmdk` and `data.vmdk` in QEMU, reaching the interactive shell in 76.471 ms.
-
-### Step 6: LAN Networking (Intel e1000 & smoltcp) ✅
-- **PCI Discovery & Configuration (`src/pci.rs`)**: Probed PCI bus for Intel 82540EM (`0x8086:0x100E`, QEMU) and 82545EM (`0x8086:0x100F`, VMware), extracted 32/64-bit MMIO BAR0, and enabled PCI Bus Mastering.
-- **Intel e1000 Hardware Driver (`src/net/e1000.rs`)**: Mapped controller MMIO space into kernel paging table. Initialized circular DMA Tx ring (16 descriptors) and Rx ring (32 descriptors) with 2048-byte packet buffers translated to physical frames. Handled controller reset, SLU, RCTL/TCTL registers, and programmed MAC address into RAL0/RAH0 with AV bit.
-- **smoltcp Protocol Stack (`src/net/mod.rs`)**: Implemented `smoltcp::phy::Device` for `E1000Phy` with zero-allocation RxToken/TxToken. Initialized `Interface` with static IP (`10.0.2.15/24`) and default gateway (`10.0.2.2`). Implemented `ping()` with RTT calculation and TCP client for `curl`.
-- **Shell Commands (`src/shell.rs`)**: Integrated `ifconfig` (IP, MAC, GW, packet counters), `ping` (ICMP Echo Request/Reply), and `curl` / `http-get` (HTTP/1.0 GET).
-- **Test Suite**: Created `tests/networking.rs`. Full test suite passed 26/26 tests cleanly across all 5 test binaries.
-
-### Step 7: WiFi Layer Simulation & 802.11 Driver Trait ✅
-- **WiFi Driver Trait (`src/net/wifi.rs`)**: Created extensible `WiFiDriver` trait (`name`, `mac_address`, `scan`, `connect`, `disconnect`, `status`, `send_frame`, `receive_frame`).
-- **Honest 802.11 Simulation (`SimulatedWiFi`)**: Acknowledged hypervisor behavior (VMware/QEMU bridge WiFi as virtual Ethernet). Implemented complete 802.11 state machine (`Disconnected` -> `Scanning` -> `Authenticating` -> `Associated` -> `Connected`), WPA2-PSK 4-way handshake simulation (ANonce, SNonce/MIC, PTK/GTK), and frame bridging to e1000.
-- **Wireless CLI Utilities (`src/shell.rs`)**:
-  - `iwconfig`: Displays `wlan0` ESSID, Mode, Frequency, BSSID, Bit Rate, Tx-Power, Link Quality, Signal Level.
-  - `iwlist [iface] scan`: Active 802.11 scanning across 2.4 GHz and 5 GHz channels reporting Cell info, BSSIDs, frequencies, and encryption types.
-  - `wifi <scan|connect|disconnect|status>`: High-level connection management.
-  - `wpa_supplicant -s <ssid> [-p <pass>]`: Linux-compatible connection syntax.
-  - Updated `ifconfig`: Now lists both `eth0` and `wlan0` interfaces.
+### Earlier Development Steps (Steps 0 through 11) ✅
+- **Step 0**: Baseline & Hygiene (IDT, custom target, QEMU runner).
+- **Step 1**: Robust Interrupts (GDT, TSS IST stack, PIC remap, PIT timer, keyboard ring buffer).
+- **Step 2**: Memory Management (4-level paging, frame allocator, 256 KiB heap, `alloc`).
+- **Step 3**: Tasks, Keyboard Input & Interactive Shell (`Task`, `Executor`, CMOS RTC, shell).
+- **Step 4**: Storage & File System (ATA PIO, MicroFS on-disk filesystem, VFS).
+- **Step 5**: Packaging (Bootable VMDK & ISO images, VMware configuration).
+- **Step 6**: LAN Networking (Intel e1000 DMA driver, `smoltcp` stack, `ping`, `curl`).
+- **Step 7**: WiFi Layer Simulation & 802.11 Driver Trait (`wlan0`, WPA2 handshake).
+- **Step 8**: Laptop Hardware (ACPI tables, RSDP, FADT reset, MADT cores, NVMe profile).
+- **Step 9**: Package Manager (`apt` / `dpkg`, `.deb` parser, dependency resolver).
+- **Step 10**: Snap Package Store (Sandboxed containers, mounts, `snap.yaml`).
+- **Step 11**: Final Release Integration & Unified Smoke Verification (49 tests).
 - **Integration Test (`tests/wifi.rs`)**: Created 5 comprehensive integration tests validating AP properties, 24-byte 802.11 MAC headers, scanning, state machine with valid and invalid passphrases, and bridged frame transmission.
 - **Test Suite**: Passed 31/31 tests cleanly across 6 test binaries.
 

@@ -27,6 +27,7 @@
 | Step 9 | Package Manager (`apt` / `dpkg` & Debian format) | 152.735 ms | ~1.5 s | Ready | Dynamic PIT Ch2 calibrated TSC (@ 2495 MHz) | 2026-11-15 |
 | Step 10 | Snap Package Store (Containers, Mounts, `snap.yaml`) | 227.163 ms | ~1.5 s | Ready | Dynamic PIT Ch2 calibrated TSC (@ 2493 MHz) | 2026-11-15 |
 | **Step 11** | **Final Release Integration & System Smoke Verification** | **216.105 ms** | **~1.5 s** | Ready | **Dynamic PIT Ch2 calibrated TSC (@ 2495 MHz)** | 2026-11-15 |
+| **Step A1** | **CA-6 Core Build Mode (`ca6-core` / clean scheduler baseline)** | **190.479 ms** | **~1.3 s** | Ready | **Dynamic PIT Ch2 calibrated TSC (@ 2495 MHz)** | 2026-11-15 |
 
 ---
 
@@ -40,3 +41,4 @@
 - In Step 9, package manager initialization (RFC 822 repository index registration and `/var/lib/dpkg/status` validation) adds negligible overhead (<1 ms), reaching interactive shell prompt readiness in **152.7 ms** (measured @ 2495 MHz).
 - In Step 10, preloading the Snap Store catalog (5 snaps with embedded manifests and container TOCs) and initializing the `/snap` mount registry brings prompt readiness to **227.2 ms** (measured @ 2493 MHz).
 - In Step 11, the unified release image initializes all hardware drivers, ACPI tables, NVMe profile, e1000 DMA, 802.11 wireless simulation, MicroFS, Debian apt repository, and Snap Store, presenting the interactive shell prompt in **216.1 ms** (calibrated @ 2495 MHz).
+- In Step A1, the `ca6-core` standalone boot mode initializes the pure CA-6 core kernel (GDT, IDT, paging, heap allocator, `kthread`, `scheduler`, and `sync`) without the networking/apt/snap/filesystem drivers, reaching shell readiness and running the CA-6 core demonstration banner in **190.5 ms** (calibrated @ 2495 MHz, raw log: `traces/ca6_core_boot.log`).

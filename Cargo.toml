@@ -3,6 +3,10 @@ name = "micro_os"
 version = "0.1.0"
 edition = "2021"
 
+[features]
+default = []
+ca6-core = []
+
 [dependencies]
 volatile = "0.2.6"
 spin = "0.5.2"
@@ -76,4 +80,8 @@ harness = false
 
 [[test]]
 name = "smoke_integration"
+harness = false
+
+[[test]]
+name = "ca6_demo"
 harness = false

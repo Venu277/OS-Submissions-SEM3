@@ -19,15 +19,18 @@ pub mod cpu;
 pub mod fs;
 pub mod gdt;
 pub mod interrupts;
+pub mod kthread;
 pub mod memory;
 pub mod net;
 pub mod pci;
 pub mod pkg;
 pub mod rtc;
+pub mod scheduler;
 pub mod serial;
 pub mod shell;
 pub mod snap;
 pub mod storage;
+pub mod sync;
 pub mod task;
 pub mod vga_buffer;
 

@@ -39,21 +39,32 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
     micro_os::allocator::init_heap(&mut mapper, &mut frame_allocator)
         .expect("Kernel heap initialization failed");
 
-    // 4. Initialize ACPI Subsystem (RSDP, XSDT, FADT, MADT)
-    micro_os::acpi::init_acpi(phys_mem_offset);
+    #[cfg(not(feature = "ca6-core"))]
+    {
+        // 4. Initialize ACPI Subsystem (RSDP, XSDT, FADT, MADT)
+        micro_os::acpi::init_acpi(phys_mem_offset);
 
-    // 5. Initialize Storage & File System (ATA probe, NVMe probe, MicroFS mount)
-    micro_os::init_storage();
-    micro_os::storage::nvme::init_nvme(&mut mapper, &mut frame_allocator);
+        // 5. Initialize Storage & File System (ATA probe, NVMe probe, MicroFS mount)
+        micro_os::init_storage();
+        micro_os::storage::nvme::init_nvme(&mut mapper, &mut frame_allocator);
 
-    // 6. Initialize LAN & 802.11 Wireless Networking (e1000 driver & smoltcp stack)
-    micro_os::net::init_network(&mut mapper, &mut frame_allocator);
+        // 6. Initialize LAN & 802.11 Wireless Networking (e1000 driver & smoltcp stack)
+        micro_os::net::init_network(&mut mapper, &mut frame_allocator);
 
-    // 7. Initialize Package Management Subsystem (apt / dpkg)
-    micro_os::pkg::init_pkg();
+        // 7. Initialize Package Management Subsystem (apt / dpkg)
+        micro_os::pkg::init_pkg();
 
-    // 8. Initialize Snap Store Subsystem
-    micro_os::snap::init_snap();
+        // 8. Initialize Snap Store Subsystem
+        micro_os::snap::init_snap();
+    }
+
+    #[cfg(feature = "ca6-core")]
+    {
+        micro_os::println!("==================================================");
+        micro_os::println!("   MicroOS - CA-6 Core Architecture Mode Active");
+        micro_os::println!("==================================================");
+        micro_os::scheduler::run_ca6_demo();
+    }
 
     // 9. Measure elapsed TSC ticks up to shell prompt readiness
     let tsc_end: u64 = unsafe { core::arch::x86_64::_rdtsc() };
