@@ -1,6 +1,6 @@
 # MicroOS — Progress Log
 
-## Current Step: Step A3 — Task Representation and Ready Queue (Layers 3 & 4) ⏳
+## Current Step: Step A4 — Round Robin with Context Switching (Layer 5) ⏳
 
 **Date:** 2026-11-15
 **Active Branch:** `ca6-compliance`
@@ -40,6 +40,23 @@
 - Created automated integration test `tests/diagnostics_trace.rs`.
 - Authored `docs/CA6_STEP_A2_kernel_diagnostics.md`.
 - **61 tests passing cleanly across 12 test suites** in QEMU.
+
+### CA-6 Step A3: Task Representation & Ready Queue (Layers 3 & 4) ✅
+- Enhanced `KThread` with `ThreadId`, explicit 4-state lifecycle machine, System V ABI `CpuContext` (`rip`, `rsp`, `rflags`, `rbp`, `rbx`, `r12`–`r15`), and 16 KiB heap stack.
+- Implemented stack canary overflow guard (`0xCA60_DEAD_BEEF_0001`) with automatic overflow detection (`check_stack_overflow()`).
+- Implemented strict state machine transition validation in `transition_to()` with automatic serial machine tracing (`trace_task_state`).
+- Expanded `ReadyQueue` FIFO structure with `enqueue`, `dequeue`, `peek`, `peek_mut`, `remove`, `contains`, `find`, and `iter`.
+- Implemented full required test suite in `tests/kthread_ready_queue.rs` covering all 6 mandatory test cases:
+  - **TC1:** Two tasks representation, distinct stacks, and FIFO ordering.
+  - **TC2:** 3–5 tasks lifecycle rotation and execution accounting.
+  - **TC3:** Boundary cases (empty queue handling, canary stack boundary limit).
+  - **TC4:** Stress testing (50 tasks lifecycle across 5 stress batches).
+  - **TC5:** Controlled failure testing (illegal transition rejection & corrupted canary detection).
+  - **TC6:** Deterministic repeatability across 10 consecutive queueing cycles.
+- Added `ca6 tasks` and `ca6 tc` commands to `src/shell.rs`.
+- Captured real QEMU execution trace `traces/step_a3_task_queue.log` (112 machine task state transitions) and parsed to `results/step_a3_trace_events.csv`.
+- Authored `docs/CA6_STEP_A3_task_and_ready_queue.md`.
+- **66 tests passing cleanly across 13 test suites** in QEMU.
 
 ### Earlier Development Steps (Steps 0 through 11) ✅
 - **Step 0**: Baseline & Hygiene (IDT, custom target, QEMU runner).

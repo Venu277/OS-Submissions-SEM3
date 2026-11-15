@@ -89,3 +89,7 @@ harness = false
 [[test]]
 name = "diagnostics_trace"
 harness = false
+
+[[test]]
+name = "kthread_ready_queue"
+harness = false
