@@ -16,6 +16,7 @@ use bootloader::{entry_point, BootInfo};
 pub mod acpi;
 pub mod allocator;
 pub mod cpu;
+pub mod diagnostics;
 pub mod fs;
 pub mod gdt;
 pub mod interrupts;

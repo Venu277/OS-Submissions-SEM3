@@ -85,3 +85,7 @@ harness = false
 [[test]]
 name = "ca6_demo"
 harness = false
+
+[[test]]
+name = "diagnostics_trace"
+harness = false

@@ -159,7 +159,7 @@ fn cmd_help() {
     println!("  apt <update|list|..> - Manage MicroOS software packages");
     println!("  dpkg <-l|-s|-i>      - Low-level Debian package manager tool");
     println!("  snap <cmd> [args...] - Universal sandboxed package store manager");
-    println!("  ca6 <demo|status>    - CA-6 Architecture verification & integrated demo");
+    println!("  ca6 <demo|status|trace> - CA-6 Architecture verification & integrated demo");
     println!("  reboot               - Restart the machine");
     println!("  shutdown             - Power off the system");
     serial_println!("Shell command 'help' executed.");
@@ -1341,9 +1341,10 @@ fn cmd_snap(args: &[&str]) {
 
 fn cmd_ca6(args: &[&str]) {
     if args.is_empty() {
-        println!("Usage: ca6 <demo|status>");
+        println!("Usage: ca6 <demo|status|trace>");
         println!("  demo   - Run CA-6 integrated architecture demonstration");
         println!("  status - Display status of CA-6 core layers 1-10");
+        println!("  trace  - Emit structured diagnostic logs and machine-parseable traces");
         return;
     }
 
@@ -1365,8 +1366,23 @@ fn cmd_ca6(args: &[&str]) {
             println!("  [Layer 10] Integrated Demo:     [OK] 'ca6 demo' command");
             serial_println!("[CA6] Status check executed successfully.");
         }
+        "trace" => {
+            println!("Emitting diagnostic logs and structured machine trace events...");
+            crate::kinfo!("Diagnostic logger operational across VGA and serial");
+            crate::kwarn!("Sample warning: high heap utilization threshold test");
+            crate::kerror!("Sample error: controlled failure condition check");
+            crate::kdebug!("Sample debug: register state inspection");
+            crate::diagnostics::trace_switch(1, 2, "quantum");
+            crate::diagnostics::trace_task_state(2, "RUNNING");
+            crate::diagnostics::trace_alloc(128, true);
+            crate::diagnostics::trace_lock_wait(2, "SPINLOCK_0", 5);
+            crate::diagnostics::trace_lock_acq(2, "SPINLOCK_0");
+            crate::diagnostics::trace_lock_rel(2, "SPINLOCK_0");
+            crate::diagnostics::trace_deadlock_prevent(2, 10, 20);
+            println!("Diagnostic & trace emission complete.");
+        }
         unknown => {
-            println!("ca6: unknown action '{}'. Usage: ca6 <demo|status>", unknown);
+            println!("ca6: unknown action '{}'. Usage: ca6 <demo|status|trace>", unknown);
         }
     }
 }

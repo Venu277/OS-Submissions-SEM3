@@ -1,6 +1,6 @@
 # MicroOS — Progress Log
 
-## Current Step: Step A2 — Kernel Diagnostics & Structured Tracing (Layer 2) ⏳
+## Current Step: Step A3 — Task Representation and Ready Queue (Layers 3 & 4) ⏳
 
 **Date:** 2026-11-15
 **Active Branch:** `ca6-compliance`
@@ -27,6 +27,19 @@
 - Created end-to-end integration test `tests/ca6_demo.rs` and documented all `unsafe` blocks in `docs/UNSAFE_AUDIT.md`.
 - Authored `docs/CA6_STEP_A1_restructure_and_core_build.md`.
 - **58 tests passing cleanly across 11 test suites** in QEMU.
+
+### CA-6 Step A2: Kernel Diagnostics & Structured Tracing (Layer 2) ✅
+- Implemented `src/diagnostics.rs` supporting dual-channel logging (`DEBUG`, `INFO`, `WARN`, `ERROR`) to VGA text console and UART serial port.
+- Synchronized all log lines with monotonic PIT timer ticks (`[LEVEL tick=N]`).
+- Established machine-parseable structured tracing format over serial (`[TRACE] tick=N event=TYPE ...`).
+- Added diagnostics and trace macros: `kinfo!`, `kwarn!`, `kerror!`, `kdebug!`, and `ktrace!`.
+- Integrated `ca6 trace` shell command to demonstrate diagnostics and live event streaming.
+- Authored formal specification `docs/TRACE_FORMAT.md` covering the full event taxonomy (`SWITCH`, `TASK_STATE`, `ALLOC`, `DEALLOC`, `LOCK_ACQ`, `LOCK_REL`, `LOCK_WAIT`, `DEADLOCK_PREVENT`, `QUANTUM_EXPIRE`).
+- Created automated QEMU trace capture script `scripts/run_trace.ps1` and Python trace log parser `scripts/parse_trace.py`.
+- Verified automated parsing into CSV dataset `results/step_a2_trace_events.csv` with event distribution statistics.
+- Created automated integration test `tests/diagnostics_trace.rs`.
+- Authored `docs/CA6_STEP_A2_kernel_diagnostics.md`.
+- **61 tests passing cleanly across 12 test suites** in QEMU.
 
 ### Earlier Development Steps (Steps 0 through 11) ✅
 - **Step 0**: Baseline & Hygiene (IDT, custom target, QEMU runner).
