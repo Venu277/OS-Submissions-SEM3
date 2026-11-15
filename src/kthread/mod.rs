@@ -96,14 +96,26 @@ impl KThread {
         let canary_bytes = STACK_CANARY_MAGIC.to_le_bytes();
         stack[0..8].copy_from_slice(&canary_bytes);
 
-        // Stack grows downward from highest address towards base
-        let stack_top = stack.as_ptr() as u64 + KTHREAD_STACK_SIZE as u64;
+        // Stack grows downward from highest address towards base.
+        // Align the top of the stack to 16 bytes conforming to System V AMD64 ABI.
+        let stack_top = ((stack.as_ptr() as usize + KTHREAD_STACK_SIZE) & !0xF) as *mut u64;
+
+        // Prepare return trampoline on stack:
+        // stack_top[-1] = kthread_exit (popped if entry_point returns)
+        // stack_top[-2] = entry_point  (popped by switch_context ret)
+        // SAFETY: `stack_top` points to the top of our newly allocated 16 KiB buffer.
+        // Offsets -1 (top - 8 bytes) and -2 (top - 16 bytes) are strictly within
+        // the allocated memory bounds of `stack`.
+        unsafe {
+            stack_top.sub(1).write(kthread_exit as usize as u64);
+            stack_top.sub(2).write(entry_point as usize as u64);
+        }
 
         let mut context = CpuContext::default();
-        // Align stack pointer to 16 bytes conforming to System V AMD64 ABI
-        context.rsp = stack_top & !0xF;
+        // Set rsp to the entry_point slot (16-byte aligned before switch_context ret)
+        context.rsp = unsafe { stack_top.sub(2) as u64 };
         context.rip = entry_point as usize as u64;
-        context.rflags = 0x202; // IF (Interrupt Flag) set
+        context.rflags = 0x202; // IF (Interrupt Flag) enabled
 
         KThread {
             id: ThreadId::new(),
@@ -112,6 +124,19 @@ impl KThread {
             context,
             stack,
             time_slice_remaining: 10, // Default 10 ticks
+            metrics: ThreadMetrics::default(),
+        }
+    }
+
+    /// Create a descriptor for the main boot thread (already running on CPU).
+    pub fn new_main(name: &str) -> Self {
+        KThread {
+            id: ThreadId::new(),
+            name: String::from(name),
+            state: ThreadState::Running,
+            context: CpuContext::default(),
+            stack: Vec::new(),
+            time_slice_remaining: 10,
             metrics: ThreadMetrics::default(),
         }
     }
@@ -180,6 +205,11 @@ impl KThread {
     pub fn reset_quantum(&mut self, quantum: u32) {
         self.time_slice_remaining = quantum;
     }
+}
+
+/// Trampoline exit function executed when a kernel thread function returns.
+pub extern "C" fn kthread_exit() -> ! {
+    crate::scheduler::exit_current_thread();
 }
 
 #[cfg(test)]

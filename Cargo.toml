@@ -93,3 +93,7 @@ harness = false
 [[test]]
 name = "kthread_ready_queue"
 harness = false
+
+[[test]]
+name = "round_robin_switch"
+harness = false

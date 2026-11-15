@@ -18,6 +18,9 @@
 | **U-02** | `src/memory.rs` | 35 | Access active 4-level page table root via physical memory offset mapping. | Bootloader provided valid identity-mapped physical memory offset. | `test_box_allocation`, `test_vec_allocation`. |
 | **U-03** | `src/allocator.rs` | 40 | Initialize heap range with page table mapping and frame allocation. | Heap virtual range `[0x_4444_4444_0000 .. +256KiB]` is unoccupied. | QEMU boot test, dynamic allocator stress testing. |
 | **U-04** | `src/interrupts.rs` | 31 | Load Interrupt Descriptor Table via `lidt` instruction and initialize 8259 PIC. | IDT entries contain valid segment selectors and interrupt handler addresses. | `test_breakpoint_exception`, PIT IRQ0 preemption triggers. |
+| **U-05** | `src/kthread/mod.rs` | 108 | Write initial return addresses (`kthread_exit` and `entry_point`) to top of thread stack buffer. | Pointer arithmetic remains strictly within the allocated bounds of the 16 KiB stack buffer `[stack_top - 16 .. stack_top]`. | `test_kthread_initialization`, `round_robin_switch` test. |
+| **U-06** | `src/scheduler/mod.rs` | 187 | Invoke assembly `switch_context` during cooperative `yield_now()`. | `prev_ptr` and `next_ptr` point to valid, aligned, heap-pinned `CpuContext` structs inside `Box<KThread>`. Interrupts disabled. | `round_robin_switch` integration test, exact sequence verified. |
+| **U-07** | `src/scheduler/mod.rs` | 231 | Invoke assembly `switch_context` during thread exit `exit_current_thread()`. | Outgoing thread marked `Terminated`, incoming thread marked `Running`, valid stack pointers restored. | `round_robin_switch` task completion and reaping test. |
 
 ---
 

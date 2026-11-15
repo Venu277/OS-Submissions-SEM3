@@ -83,8 +83,8 @@ fn test_tc1_two_tasks() {
     let id2 = t2.id;
 
     let mut rq = ReadyQueue::new();
-    rq.enqueue(t1);
-    rq.enqueue(t2);
+    rq.enqueue(alloc::boxed::Box::new(t1));
+    rq.enqueue(alloc::boxed::Box::new(t2));
     assert_eq!(rq.len(), 2);
 
     let dequeued1 = rq.dequeue().expect("expected task_1");
@@ -102,7 +102,7 @@ fn test_tc2_five_tasks() {
     for i in 0..5 {
         let t = KThread::new("worker", dummy_entry);
         ids[i] = t.id;
-        rq.enqueue(t);
+        rq.enqueue(alloc::boxed::Box::new(t));
     }
     assert_eq!(rq.len(), 5);
 
@@ -153,7 +153,7 @@ fn test_tc4_stress_tasks() {
         let mut rq = ReadyQueue::new();
         for _i in 0..BATCH_SIZE {
             let t = KThread::new("stress_worker", dummy_entry);
-            rq.enqueue(t);
+            rq.enqueue(alloc::boxed::Box::new(t));
         }
         assert_eq!(rq.len(), BATCH_SIZE);
 
@@ -206,8 +206,8 @@ fn test_tc6_repeatability() {
         let t2 = KThread::new("rep_b", dummy_entry);
         let id2 = t2.id;
 
-        rq.enqueue(t1);
-        rq.enqueue(t2);
+        rq.enqueue(alloc::boxed::Box::new(t1));
+        rq.enqueue(alloc::boxed::Box::new(t2));
 
         let popped1 = rq.dequeue().expect("expected rep_a");
         let popped2 = rq.dequeue().expect("expected rep_b");

@@ -1,6 +1,6 @@
 # MicroOS — Progress Log
 
-## Current Step: Step A4 — Round Robin with Context Switching (Layer 5) ⏳
+## Current Step: Step A5 — Timer-Driven Preemptive Scheduling (Layer 6) ⏳
 
 **Date:** 2026-11-15
 **Active Branch:** `ca6-compliance`
@@ -46,17 +46,24 @@
 - Implemented stack canary overflow guard (`0xCA60_DEAD_BEEF_0001`) with automatic overflow detection (`check_stack_overflow()`).
 - Implemented strict state machine transition validation in `transition_to()` with automatic serial machine tracing (`trace_task_state`).
 - Expanded `ReadyQueue` FIFO structure with `enqueue`, `dequeue`, `peek`, `peek_mut`, `remove`, `contains`, `find`, and `iter`.
-- Implemented full required test suite in `tests/kthread_ready_queue.rs` covering all 6 mandatory test cases:
-  - **TC1:** Two tasks representation, distinct stacks, and FIFO ordering.
-  - **TC2:** 3–5 tasks lifecycle rotation and execution accounting.
-  - **TC3:** Boundary cases (empty queue handling, canary stack boundary limit).
-  - **TC4:** Stress testing (50 tasks lifecycle across 5 stress batches).
-  - **TC5:** Controlled failure testing (illegal transition rejection & corrupted canary detection).
-  - **TC6:** Deterministic repeatability across 10 consecutive queueing cycles.
+- Implemented full required test suite in `tests/kthread_ready_queue.rs` covering all 6 mandatory test cases (TC1-TC6).
 - Added `ca6 tasks` and `ca6 tc` commands to `src/shell.rs`.
 - Captured real QEMU execution trace `traces/step_a3_task_queue.log` (112 machine task state transitions) and parsed to `results/step_a3_trace_events.csv`.
 - Authored `docs/CA6_STEP_A3_task_and_ready_queue.md`.
 - **66 tests passing cleanly across 13 test suites** in QEMU.
+
+### CA-6 Step A4: Round Robin with Context Switching (Layer 5) ✅
+- Implemented AMD64 context switch assembly routine (`switch_context`) in `src/scheduler/context_switch.rs` in Intel syntax, saving and restoring callee-saved registers (`r15`, `r14`, `r13`, `r12`, `rbx`, `rbp`), `rflags`, and `rsp`.
+- Configured stack return trampoline with `kthread_exit` and `entry_point` ensuring clean termination when thread functions return.
+- Implemented cooperative multitasking: `yield_now()`, `exit_current_thread()`, `reap_terminated()`, and `wait_all_threads()`.
+- Implemented live 3-task cooperative Round Robin demonstration (`demo_three_tasks_round_robin()`).
+- Automated integration test `tests/round_robin_switch.rs` proved exact interleaved pattern `[1, 2, 3, 1, 2, 3, 1, 2, 3]`, task completion, and thread reaping.
+- Captured real QEMU execution trace `traces/step_a4_round_robin.log` (40 machine trace events: 16 switches, 24 transitions) and parsed to `results/step_a4_trace_events.csv`.
+- Documented safety invariants for context switching in `docs/UNSAFE_AUDIT.md` (U-05, U-06, U-07).
+- Authored `docs/CA6_STEP_A4_round_robin_context_switching.md`.
+- **67 tests passing cleanly across 14 test suites** in QEMU.
+
+### Earlier Development Steps (Steps 0 through 11) ✅
 
 ### Earlier Development Steps (Steps 0 through 11) ✅
 - **Step 0**: Baseline & Hygiene (IDT, custom target, QEMU runner).

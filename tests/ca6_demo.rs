@@ -48,8 +48,8 @@ fn main(boot_info: &'static BootInfo) -> ! {
     let mut rq = ReadyQueue::new();
     let id1 = thread1.id;
     let id2 = thread2.id;
-    rq.enqueue(thread1);
-    rq.enqueue(thread2);
+    rq.enqueue(alloc::boxed::Box::new(thread1));
+    rq.enqueue(alloc::boxed::Box::new(thread2));
     assert_eq!(rq.len(), 2);
     assert_eq!(rq.dequeue().unwrap().id, id1);
     assert_eq!(rq.dequeue().unwrap().id, id2);
