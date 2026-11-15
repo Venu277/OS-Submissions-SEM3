@@ -1,6 +1,6 @@
 # MicroOS — Progress Log
 
-## Current Step: Step A6 — Synchronization & Track C Concurrency Engineering (Layer 7) ⏳
+## Current Step: Step A7 — Memory Allocator Evaluation & Benchmark (Layer 8) ⏳
 
 **Date:** 2026-11-15
 **Active Branch:** `ca6-compliance`
@@ -9,6 +9,17 @@
 ---
 
 ## What Is Done
+
+### CA-6 Step A6: Synchronization & Track C Concurrency Specialization (Layer 7) ✅
+- Enhanced hand-written `Spinlock<T>` with lock naming, atomic CAS, spin loop counter (`spins_waited`, `max_spins`), hold-time measurement (`hold_ticks`), RAII `Deref`/`DerefMut`, and diagnostic tracing (`LOCK_ACQ`, `LOCK_REL`, `LOCK_WAIT`).
+- Implemented hierarchical deadlock prevention `RankedLock<T>` enforcing a strict partial order: out-of-order acquisitions are rejected with `LockRankError::HierarchyViolation` and emit `DEADLOCK_PREVENT` traces.
+- Implemented multi-stage demonstration in `src/sync/mod.rs` (`demo_synchronization()`) covering mutual exclusion, multi-task contention under preemptive time-slicing, and lock ranking deadlock rejection.
+- Integrated `ca6 sync` into the kernel shell CLI and hooked into `run_ca6_demo()`.
+- Created automated integration test `tests/concurrency_sync.rs` validating mutual exclusion, real preemptive lock contention (`waited=210794` spins), in-order success, out-of-order rejection, and 3-level LIFO ranking unwind.
+- Captured real QEMU execution trace `traces/step_a6_sync.log` and parsed to `results/step_a6_trace_events.csv` (112 events: 34 `TASK_STATE`, 26 `LOCK_ACQ`, 26 `LOCK_REL`, 24 `SWITCH`, 1 `QUANTUM_EXPIRE`, 1 `DEADLOCK_PREVENT`).
+- Updated `docs/UNSAFE_AUDIT.md` (U-01).
+- Authored `docs/CA6_STEP_A6_synchronization_concurrency.md`.
+- **79 tests passing cleanly across 16 test suites** in QEMU.
 
 ### CA-6 Step A5: Timer-Driven Preemptive Scheduling (Layer 6) ✅
 - Programmed 8253 PIT Channel 0 to 100 Hz (`init_pit(100)` @ 10 ms per tick) in `src/interrupts.rs` and `src/lib.rs`.

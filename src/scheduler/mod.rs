@@ -353,6 +353,18 @@ pub fn reap_terminated() -> usize {
     }
 }
 
+/// Query the ThreadId of the currently executing thread (0 if unassigned or scheduler locked).
+pub fn current_thread_id() -> u64 {
+    if let Some(guard) = SCHEDULER.try_lock() {
+        if let Some(ref sched) = *guard {
+            if let Some(ref current) = sched.current_thread {
+                return current.id.0;
+            }
+        }
+    }
+    0
+}
+
 /// Wait until all spawned threads in the ready queue complete their execution.
 pub fn wait_all_threads() {
     loop {
@@ -525,6 +537,7 @@ pub fn run_ca6_demo() {
 
     demo_three_tasks_round_robin();
     demo_preemptive_scheduling();
+    crate::sync::demo_synchronization();
 }
 
 #[cfg(test)]

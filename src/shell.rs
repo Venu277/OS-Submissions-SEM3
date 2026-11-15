@@ -159,7 +159,7 @@ fn cmd_help() {
     println!("  apt <update|list|..> - Manage MicroOS software packages");
     println!("  dpkg <-l|-s|-i>      - Low-level Debian package manager tool");
     println!("  snap <cmd> [args...] - Universal sandboxed package store manager");
-    println!("  ca6 <demo|status|trace|tasks|tc|preempt> - CA-6 Architecture verification & integrated demo");
+    println!("  ca6 <demo|status|trace|tasks|tc|preempt|sync> - CA-6 Architecture verification & integrated demo");
     println!("  reboot               - Restart the machine");
     println!("  shutdown             - Power off the system");
     serial_println!("Shell command 'help' executed.");
@@ -1341,13 +1341,14 @@ fn cmd_snap(args: &[&str]) {
 
 fn cmd_ca6(args: &[&str]) {
     if args.is_empty() {
-        println!("Usage: ca6 <demo|status|trace|tasks|tc|preempt>");
+        println!("Usage: ca6 <demo|status|trace|tasks|tc|preempt|sync>");
         println!("  demo    - Run CA-6 integrated architecture demonstration");
         println!("  status  - Display status of CA-6 core layers 1-10");
         println!("  trace   - Emit structured diagnostic logs and machine-parseable traces");
         println!("  tasks   - Display active kernel thread roster and stack status");
         println!("  tc      - Execute CA-6 required test cases (TC1 - TC6)");
         println!("  preempt - Run Layer 6 timer-driven preemptive scheduling demo");
+        println!("  sync    - Run Layer 7 synchronization & Track C lock ranking demo");
         return;
     }
 
@@ -1357,6 +1358,9 @@ fn cmd_ca6(args: &[&str]) {
         }
         "preempt" => {
             crate::scheduler::demo_preemptive_scheduling();
+        }
+        "sync" => {
+            crate::sync::demo_synchronization();
         }
         "status" => {
             println!("CA-6 Subsystem Compliance Status (Layers 1-10):");
@@ -1421,7 +1425,7 @@ fn cmd_ca6(args: &[&str]) {
             serial_println!("[CA6] TC1-TC6 validation suite executed successfully.");
         }
         unknown => {
-            println!("ca6: unknown action '{}'. Usage: ca6 <demo|status|trace|tasks|tc|preempt>", unknown);
+            println!("ca6: unknown action '{}'. Usage: ca6 <demo|status|trace|tasks|tc|preempt|sync>", unknown);
         }
     }
 }

@@ -101,3 +101,7 @@ harness = false
 [[test]]
 name = "preemptive_scheduling"
 harness = false
+
+[[test]]
+name = "concurrency_sync"
+harness = false
