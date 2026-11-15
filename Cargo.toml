@@ -97,3 +97,7 @@ harness = false
 [[test]]
 name = "round_robin_switch"
 harness = false
+
+[[test]]
+name = "preemptive_scheduling"
+harness = false

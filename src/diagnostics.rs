@@ -138,6 +138,17 @@ pub fn trace_deadlock_prevent(task_id: u64, requested_rank: u32, held_rank: u32)
     );
 }
 
+/// Emit a preemptive quantum expiration trace event (Layer 6).
+pub fn trace_quantum_expire(task_id: u64, consumed_ticks: u32) {
+    let tick = crate::interrupts::timer_ticks();
+    crate::serial_println!(
+        "[TRACE] tick={} event=QUANTUM_EXPIRE task={} consumed={}",
+        tick,
+        task_id,
+        consumed_ticks
+    );
+}
+
 /// Diagnostic Log: INFO level
 #[macro_export]
 macro_rules! kinfo {

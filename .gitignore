@@ -5,6 +5,7 @@ build/
 *.img
 *.bin.bak
 *.log
+!traces/*.log
 disk.img
 # Never commit secrets
 *.pem

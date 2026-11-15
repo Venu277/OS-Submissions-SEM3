@@ -98,6 +98,30 @@ pub fn timer_ticks() -> u64 {
     TIMER_TICKS.load(Ordering::Relaxed)
 }
 
+// ---------- PIT Timer Configuration ----------
+
+/// Programmable Interval Timer (PIT) 8253/8254 clock frequency (Hz).
+pub const PIT_BASE_FREQUENCY_HZ: u32 = 1_193_182;
+
+/// Configure PIT Channel 0 to generate periodic timer interrupts at `freq_hz`.
+///
+/// Port 0x43 is the Mode/Command register.
+/// Port 0x40 is Channel 0 Data port.
+/// Mode 0x34: Channel 0, lobyte/hibyte access, Mode 2 (rate generator), 16-bit binary.
+pub fn init_pit(freq_hz: u32) {
+    let divisor = (PIT_BASE_FREQUENCY_HZ / freq_hz.max(18)).clamp(1, 65535) as u16;
+    let mut pit_cmd: Port<u8> = Port::new(0x43);
+    let mut pit_ch0: Port<u8> = Port::new(0x40);
+
+    // SAFETY: Writing valid command byte 0x34 and 16-bit divisor to standard x86 PIT I/O ports
+    // 0x43 and 0x40. Does not access unmapped memory.
+    unsafe {
+        pit_cmd.write(0x34);
+        pit_ch0.write((divisor & 0xFF) as u8);
+        pit_ch0.write((divisor >> 8) as u8);
+    }
+}
+
 // ---------- PIT TSC Calibration ----------
 
 /// Calibrates the CPU TSC frequency using PIT Channel 2 one-shot mode over ~10 ms.
@@ -229,6 +253,9 @@ extern "x86-interrupt" fn timer_interrupt_handler(_stack_frame: InterruptStackFr
         PICS.lock()
             .notify_end_of_interrupt(InterruptIndex::Timer.as_u8());
     }
+
+    // CA-6 Layer 6: Timer-driven preemptive scheduling
+    crate::scheduler::timer_tick();
 }
 
 extern "x86-interrupt" fn keyboard_interrupt_handler(_stack_frame: InterruptStackFrame) {

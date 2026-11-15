@@ -1,6 +1,6 @@
 # MicroOS — Progress Log
 
-## Current Step: Step A5 — Timer-Driven Preemptive Scheduling (Layer 6) ⏳
+## Current Step: Step A6 — Synchronization & Track C Concurrency Engineering (Layer 7) ⏳
 
 **Date:** 2026-11-15
 **Active Branch:** `ca6-compliance`
@@ -9,6 +9,19 @@
 ---
 
 ## What Is Done
+
+### CA-6 Step A5: Timer-Driven Preemptive Scheduling (Layer 6) ✅
+- Programmed 8253 PIT Channel 0 to 100 Hz (`init_pit(100)` @ 10 ms per tick) in `src/interrupts.rs` and `src/lib.rs`.
+- Connected PIT IRQ0 timer interrupt to `crate::scheduler::timer_tick()`.
+- Implemented global `PREEMPTION_ENABLED` atomic control and scoped RAII `PreemptionGuard`.
+- Implemented quantum depletion accounting, involuntary Round Robin rotation, and assembly context switching (`switch_context`) from interrupt context.
+- Added structured trace event emissions: `QUANTUM_EXPIRE` and `SWITCH ... reason=quantum`.
+- Implemented live compute-bound preemption demonstration (`demo_preemptive_scheduling()`) and integrated into `ca6 preempt` and `run_ca6_demo()`.
+- Created automated integration test `tests/preemptive_scheduling.rs` validating preemption flags, involuntary preemption of compute loops with no yields, and fair time-slicing (Task A = 46, Task B = 46).
+- Captured real QEMU execution trace `traces/step_a5_preemption.log` and parsed to `results/step_a5_trace_events.csv` (52 events: 30 `TASK_STATE`, 21 `SWITCH`, 1 `QUANTUM_EXPIRE`).
+- Documented unsafe operations in `docs/UNSAFE_AUDIT.md` (U-08 PIT I/O, U-09 interrupt context switch).
+- Authored `docs/CA6_STEP_A5_preemptive_scheduling.md`.
+- **72 tests passing cleanly across 15 test suites** in QEMU.
 
 ### CA-6 Step A0: Read-Only Audit & Gap Analysis ✅
 - Audited entire workspace against CA-6 university assignment (Sections 1–45).

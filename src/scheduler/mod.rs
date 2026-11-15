@@ -11,6 +11,7 @@ use alloc::boxed::Box;
 use alloc::collections::vec_deque::Iter;
 use alloc::collections::VecDeque;
 use alloc::vec::Vec;
+use core::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use spin::Mutex;
 
 use crate::kthread::{CpuContext, KThread, ThreadId, ThreadState};
@@ -18,6 +19,39 @@ use crate::println;
 use crate::serial_println;
 
 pub static SCHEDULER: Mutex<Option<RoundRobinScheduler>> = Mutex::new(None);
+
+/// Global flag controlling timer-driven preemption (CA-6 Layer 6).
+pub static PREEMPTION_ENABLED: AtomicBool = AtomicBool::new(false);
+
+/// Enable or disable timer-driven preemption.
+pub fn enable_preemption(enable: bool) {
+    PREEMPTION_ENABLED.store(enable, Ordering::SeqCst);
+}
+
+/// Query whether timer-driven preemption is active.
+pub fn is_preemption_enabled() -> bool {
+    PREEMPTION_ENABLED.load(Ordering::SeqCst)
+}
+
+/// RAII Guard that temporarily disables preemption for a critical section.
+pub struct PreemptionGuard {
+    was_enabled: bool,
+}
+
+impl PreemptionGuard {
+    pub fn new() -> Self {
+        let was_enabled = PREEMPTION_ENABLED.swap(false, Ordering::SeqCst);
+        PreemptionGuard { was_enabled }
+    }
+}
+
+impl Drop for PreemptionGuard {
+    fn drop(&mut self) {
+        if self.was_enabled {
+            PREEMPTION_ENABLED.store(true, Ordering::SeqCst);
+        }
+    }
+}
 
 /// Layer 4: FIFO Ready Queue of runnable threads.
 pub struct ReadyQueue {
@@ -163,6 +197,7 @@ pub fn yield_now() {
 
             current.record_switch();
             next.record_switch();
+            current.time_slice_remaining = sched.default_quantum;
             sched.total_switches += 1;
 
             let prev_id = current.id.0;
@@ -181,6 +216,86 @@ pub fn yield_now() {
         // SAFETY: `prev_ptr` and `next_ptr` point to valid, heap-pinned `CpuContext` instances
         // in Box<KThread> allocations. Interrupts are disabled across the switch.
         // Callee-saved registers and stack pointers are preserved according to System V ABI.
+        unsafe {
+            context_switch::switch_context(prev_ptr, next_ptr);
+        }
+    }
+}
+
+/// CA-6 Layer 6: Timer tick hook called from the PIT IRQ0 interrupt handler.
+///
+/// Increments execution metrics, decrements remaining time slice,
+/// and performs an involuntary context switch when the quantum is exhausted.
+pub fn timer_tick() {
+    if !is_preemption_enabled() {
+        return;
+    }
+
+    let mut prev_ptr: *mut CpuContext = core::ptr::null_mut();
+    let mut next_ptr: *const CpuContext = core::ptr::null();
+
+    {
+        // Use try_lock to avoid deadlock if interrupt occurred during a scheduler operation
+        let mut sched_lock = match SCHEDULER.try_lock() {
+            Some(lock) => lock,
+            None => return,
+        };
+
+        if let Some(ref mut sched) = *sched_lock {
+            if sched.ready_queue.is_empty() {
+                if let Some(ref mut current) = sched.current_thread {
+                    current.metrics.run_ticks = current.metrics.run_ticks.saturating_add(1);
+                    current.time_slice_remaining = sched.default_quantum;
+                }
+                return;
+            }
+
+            if let Some(ref mut current) = sched.current_thread {
+                current.record_run_ticks(1);
+
+                if current.time_slice_remaining > 0 {
+                    // Quantum has not expired yet
+                    return;
+                }
+            } else {
+                return;
+            }
+
+            // Quantum has expired: involuntary preemptive context switch
+            let mut current = sched.current_thread.take().expect("no running thread");
+            let mut next = sched.ready_queue.dequeue().expect("ready queue checked non-empty");
+
+            let current_id = current.id.0;
+            let next_id = next.id.0;
+            let quantum = sched.default_quantum;
+
+            // Emit structured trace event
+            crate::diagnostics::trace_quantum_expire(current_id, quantum);
+
+            // Reset quantum for outgoing thread
+            current.time_slice_remaining = quantum;
+
+            let _ = current.transition_to(ThreadState::Ready);
+            let _ = next.transition_to(ThreadState::Running);
+
+            current.record_switch();
+            next.record_switch();
+            sched.total_switches += 1;
+
+            crate::diagnostics::trace_switch(current_id, next_id, "quantum");
+
+            prev_ptr = &mut current.context as *mut CpuContext;
+            next_ptr = &next.context as *const CpuContext;
+
+            sched.ready_queue.enqueue(current);
+            sched.current_thread = Some(next);
+        }
+    }
+
+    if !prev_ptr.is_null() && !next_ptr.is_null() {
+        // SAFETY: `prev_ptr` and `next_ptr` point to valid heap-allocated CpuContext structs
+        // within Box<KThread> instances. Preemption occurs in timer interrupt context
+        // where hardware interrupts are disabled. Context switch preserves all callee-saved registers.
         unsafe {
             context_switch::switch_context(prev_ptr, next_ptr);
         }
@@ -311,6 +426,84 @@ pub fn demo_three_tasks_round_robin() {
     serial_println!("[CA6-DEMO] 3-task round-robin completed successfully; reaped={}", reaped);
 }
 
+// ---------- Layer 6: Preemptive Timer-Driven Scheduling Demonstration ----------
+
+static ALPHA_SPIN_COUNT: AtomicU64 = AtomicU64::new(0);
+static STOP_PREEMPT_DEMO: AtomicBool = AtomicBool::new(false);
+
+extern "C" fn preempt_worker_alpha() {
+    println!("  [Worker Alpha] Starting CPU-bound computation loop (NO voluntary yields)...");
+    serial_println!("  [Worker Alpha] Starting CPU-bound computation loop (NO voluntary yields)...");
+
+    while !STOP_PREEMPT_DEMO.load(Ordering::Relaxed) {
+        ALPHA_SPIN_COUNT.fetch_add(1, Ordering::Relaxed);
+        for _ in 0..10_000 {
+            core::hint::spin_loop();
+        }
+    }
+
+    println!("  [Worker Alpha] Preempted successfully and received stop signal! Exiting.");
+    serial_println!("  [Worker Alpha] Preempted successfully and received stop signal! Exiting.");
+}
+
+extern "C" fn preempt_worker_beta() {
+    println!("  [Worker Beta ] Scheduled via PIT timer preemption!");
+    serial_println!("  [Worker Beta ] Scheduled via PIT timer preemption!");
+
+    let count = ALPHA_SPIN_COUNT.load(Ordering::Relaxed);
+    println!("  [Worker Beta ] Validated Alpha computed {} iterations while holding CPU.", count);
+    serial_println!("  [Worker Beta ] Validated Alpha computed {} iterations while holding CPU.", count);
+    println!("  [Worker Beta ] Signaling Alpha to terminate...");
+    serial_println!("  [Worker Beta ] Signaling Alpha to terminate...");
+
+    STOP_PREEMPT_DEMO.store(true, Ordering::Relaxed);
+    println!("  [Worker Beta ] Worker Beta exiting.");
+    serial_println!("  [Worker Beta ] Worker Beta exiting.");
+}
+
+/// Run the CA-6 Timer-Driven Preemptive Scheduling Demonstration (Layer 6).
+pub fn demo_preemptive_scheduling() {
+    println!("==================================================");
+    println!("   CA-6 Layer 6: Timer-Driven Preemptive Scheduling Demo");
+    println!("==================================================");
+    println!("Specification: CA-6 Section 9 (Layer 6) & Section 10");
+    println!("Scenario: Worker Alpha executes an infinite CPU-bound loop with NO yields.");
+    println!("          Timer interrupt (PIT IRQ0) preempts Alpha when quantum expires.");
+    println!("          Worker Beta runs, observes Alpha progress, and signals completion.");
+    println!("--------------------------------------------------");
+
+    ALPHA_SPIN_COUNT.store(0, Ordering::Relaxed);
+    STOP_PREEMPT_DEMO.store(false, Ordering::Relaxed);
+
+    // Initialize scheduler with a small quantum of 3 ticks (30 ms @ 100 Hz)
+    init_scheduler(3);
+
+    let id_a = spawn("worker_alpha", preempt_worker_alpha);
+    let id_b = spawn("worker_beta", preempt_worker_beta);
+
+    println!("Spawned Worker Alpha (task={}) and Worker Beta (task={})", id_a.0, id_b.0);
+    println!("Enabling timer-driven preemption (quantum = 3 ticks)...");
+    serial_println!("[CA6-PREEMPT] Enabling timer preemption; quantum=3 ticks");
+
+    enable_preemption(true);
+
+    // Wait for all spawned threads to finish
+    wait_all_threads();
+
+    enable_preemption(false);
+
+    let reaped = reap_terminated();
+    println!("--------------------------------------------------");
+    println!("Preemptive demo finished! Reaped {} terminated threads.", reaped);
+    println!("Worker Alpha completed {} compute iterations.", ALPHA_SPIN_COUNT.load(Ordering::Relaxed));
+    println!("==================================================");
+    serial_println!(
+        "[CA6-DEMO] Preemptive scheduling completed successfully; alpha_count={}, reaped={}",
+        ALPHA_SPIN_COUNT.load(Ordering::Relaxed),
+        reaped
+    );
+}
+
 /// Execute the CA-6 Integrated Core Demonstration (Section 9 Layer 10 & Section 42).
 pub fn run_ca6_demo() {
     println!("==================================================");
@@ -331,6 +524,7 @@ pub fn run_ca6_demo() {
     println!("==================================================");
 
     demo_three_tasks_round_robin();
+    demo_preemptive_scheduling();
 }
 
 #[cfg(test)]
@@ -400,7 +594,7 @@ mod tests {
         assert_eq!(sched.total_switches, 0);
 
         let id1 = sched.spawn_thread("alpha", test_fn);
-        let id2 = sched.spawn_thread("beta", test_fn);
+        let _id2 = sched.spawn_thread("beta", test_fn);
         assert_eq!(sched.ready_queue.len(), 2);
 
         let t_next = sched.select_next().expect("should select alpha");
@@ -410,5 +604,42 @@ mod tests {
         sched.terminated_queue.push(t_next);
         assert_eq!(sched.reap_terminated(), 1);
         assert_eq!(sched.terminated_queue.len(), 0);
+    }
+
+    #[test_case]
+    fn test_preemption_flag_and_guard() {
+        enable_preemption(false);
+        assert!(!is_preemption_enabled());
+
+        enable_preemption(true);
+        assert!(is_preemption_enabled());
+
+        {
+            let _guard = PreemptionGuard::new();
+            assert!(!is_preemption_enabled());
+        }
+        // Guard dropped, preemption restored
+        assert!(is_preemption_enabled());
+
+        enable_preemption(false);
+        assert!(!is_preemption_enabled());
+    }
+
+    #[test_case]
+    fn test_scheduler_quantum_accounting() {
+        let sched = RoundRobinScheduler::new(5);
+        assert_eq!(sched.default_quantum, 5);
+
+        let mut t1 = Box::new(KThread::new("t1", test_fn));
+        assert_eq!(t1.time_slice_remaining, 10);
+        t1.time_slice_remaining = 5;
+
+        // Decrement quantum
+        t1.time_slice_remaining -= 1;
+        assert_eq!(t1.time_slice_remaining, 4);
+
+        // Reset quantum
+        t1.reset_quantum(sched.default_quantum);
+        assert_eq!(t1.time_slice_remaining, 5);
     }
 }

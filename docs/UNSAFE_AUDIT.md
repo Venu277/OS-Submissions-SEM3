@@ -21,6 +21,8 @@
 | **U-05** | `src/kthread/mod.rs` | 108 | Write initial return addresses (`kthread_exit` and `entry_point`) to top of thread stack buffer. | Pointer arithmetic remains strictly within the allocated bounds of the 16 KiB stack buffer `[stack_top - 16 .. stack_top]`. | `test_kthread_initialization`, `round_robin_switch` test. |
 | **U-06** | `src/scheduler/mod.rs` | 187 | Invoke assembly `switch_context` during cooperative `yield_now()`. | `prev_ptr` and `next_ptr` point to valid, aligned, heap-pinned `CpuContext` structs inside `Box<KThread>`. Interrupts disabled. | `round_robin_switch` integration test, exact sequence verified. |
 | **U-07** | `src/scheduler/mod.rs` | 231 | Invoke assembly `switch_context` during thread exit `exit_current_thread()`. | Outgoing thread marked `Terminated`, incoming thread marked `Running`, valid stack pointers restored. | `round_robin_switch` task completion and reaping test. |
+| **U-08** | `src/interrupts.rs` | 118 | Write command byte and 16-bit divisor to PIT 8253 I/O ports 0x43 and 0x40. | Writing valid mode 0x34 and divisor clamped to `[1, 65535]`; does not touch unmapped memory. | 100 Hz timer tick frequency verified in QEMU PIT IRQ0 handler. |
+| **U-09** | `src/scheduler/mod.rs` | 300 | Invoke assembly `switch_context` during involuntary timer preemption `timer_tick()`. | `prev_ptr` and `next_ptr` point to valid heap-pinned `CpuContext` structs. Executed in interrupt context (IF=0). | `tests/preemptive_scheduling.rs` compute-bound preemption test. |
 
 ---
 

@@ -1,0 +1,64 @@
+==================================================
+   CA-6 Layer 5: Round Robin & Context Switch Test
+==================================================
+rr::1_init_scheduler...	[ok]
+rr::2_spawn_three_tasks...	[ok]
+rr::3_executing_cooperative_round_robin_loop...
+[TRACE] tick=2 event=TASK_STATE task=2 state=RUNNING
+[TRACE] tick=2 event=SWITCH from=1 to=2 reason=yield
+  [Task 1 / Alpha] Iteration 1/3 running
+[TRACE] tick=2 event=TASK_STATE task=2 state=READY
+[TRACE] tick=2 event=TASK_STATE task=3 state=RUNNING
+[TRACE] tick=2 event=SWITCH from=2 to=3 reason=yield
+  [Task 2 / Beta ] Iteration 1/3 running
+[TRACE] tick=2 event=TASK_STATE task=3 state=READY
+[TRACE] tick=2 event=TASK_STATE task=4 state=RUNNING
+[TRACE] tick=2 event=SWITCH from=3 to=4 reason=yield
+  [Task 3 / Gamma] Iteration 1/3 running
+[TRACE] tick=2 event=TASK_STATE task=4 state=READY
+[TRACE] tick=2 event=SWITCH from=4 to=1 reason=yield
+[TRACE] tick=2 event=TASK_STATE task=2 state=RUNNING
+[TRACE] tick=2 event=SWITCH from=1 to=2 reason=yield
+  [Task 1 / Alpha] Iteration 2/3 running
+[TRACE] tick=2 event=TASK_STATE task=2 state=READY
+[TRACE] tick=2 event=TASK_STATE task=3 state=RUNNING
+[TRACE] tick=2 event=SWITCH from=2 to=3 reason=yield
+  [Task 2 / Beta ] Iteration 2/3 running
+[TRACE] tick=2 event=TASK_STATE task=3 state=READY
+[TRACE] tick=2 event=TASK_STATE task=4 state=RUNNING
+[TRACE] tick=2 event=SWITCH from=3 to=4 reason=yield
+  [Task 3 / Gamma] Iteration 2/3 running
+[TRACE] tick=2 event=TASK_STATE task=4 state=READY
+[TRACE] tick=2 event=SWITCH from=4 to=1 reason=yield
+[TRACE] tick=2 event=TASK_STATE task=2 state=RUNNING
+[TRACE] tick=2 event=SWITCH from=1 to=2 reason=yield
+  [Task 1 / Alpha] Iteration 3/3 running
+[TRACE] tick=2 event=TASK_STATE task=2 state=READY
+[TRACE] tick=2 event=TASK_STATE task=3 state=RUNNING
+[TRACE] tick=2 event=SWITCH from=2 to=3 reason=yield
+  [Task 2 / Beta ] Iteration 3/3 running
+[TRACE] tick=2 event=TASK_STATE task=3 state=READY
+[TRACE] tick=2 event=TASK_STATE task=4 state=RUNNING
+[TRACE] tick=2 event=SWITCH from=3 to=4 reason=yield
+  [Task 3 / Gamma] Iteration 3/3 running
+[TRACE] tick=2 event=TASK_STATE task=4 state=READY
+[TRACE] tick=2 event=SWITCH from=4 to=1 reason=yield
+[TRACE] tick=2 event=TASK_STATE task=2 state=RUNNING
+[TRACE] tick=2 event=SWITCH from=1 to=2 reason=yield
+  [Task 1 / Alpha] Returning from entry function.
+[TRACE] tick=3 event=TASK_STATE task=2 state=TERMINATED
+[TRACE] tick=3 event=TASK_STATE task=3 state=RUNNING
+[TRACE] tick=3 event=SWITCH from=2 to=3 reason=terminate
+  [Task 2 / Beta ] Returning from entry function.
+[TRACE] tick=3 event=TASK_STATE task=3 state=TERMINATED
+[TRACE] tick=3 event=TASK_STATE task=4 state=RUNNING
+[TRACE] tick=3 event=SWITCH from=3 to=4 reason=terminate
+  [Task 3 / Gamma] Returning from entry function.
+[TRACE] tick=3 event=TASK_STATE task=4 state=TERMINATED
+[TRACE] tick=3 event=SWITCH from=4 to=1 reason=terminate
+rr::3_round_robin_loop_completed!	[ok]
+rr::4_verify_task_execution_order...	[ok] (Exact pattern [1, 2, 3, 1, 2, 3, 1, 2, 3] verified!)
+rr::5_task_completion_and_reaping...	[ok] (3/3 terminated threads reaped!)
+==================================================
+CA-6 Layer 5 Round Robin & Context Switch: ALL PASSED
+==================================================
