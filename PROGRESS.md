@@ -1,15 +1,35 @@
-# MicroOS — Progress Log
+# VenOS — Progress Log
 
-## Project Status: CA-6 Compliance 100% COMPLETE ✅ (Submission Ready)
+## Current Status: VenOS Real-Hardware & UEFI Progression (In Progress)
 
-**Date:** 2026-11-15
-**Active Branch:** `ca6-compliance`
-**Submission Release Tag:** `v1.0-ca6-submission`
-**Specification:** CA-6 Flagship Engineering Project (15 / 15 Marks Compliance)
+**Date:** 2026-11-16  
+**Active Branch:** `venos`  
+**Specification:** CA-6 Flagship Engineering Project (15 / 15 Marks Compliance) + Real x86_64 Hardware Target  
 
 ---
 
 ## What Is Done
+
+### Step V0: Read-Only System Audit & Gap Analysis ✅
+- **Repository Audit:** Completed full forensic audit across all 45 sections of the CA-6 specification.
+- **CA-6 Compliance & Gap Analysis:** Authored `docs/GAP_ANALYSIS.md` detailing Present/Partial/Missing status across boot, console, task representation, ready queue, Round Robin scheduling, timer preemption, synchronization, memory allocation, TC1–TC6 test cases, Track C specialization, and final deliverables.
+- **Step V0 Documentation:** Authored `docs/STEP_V00_read_only_audit.md` following the required documentation template.
+- **Stray File Check:** Verified git history for the root `micro_os` file: originally a git submodule (mode 160000) in commit `47f2cceb`, removed in commit `bc779451`. Working directory is clean.
+- **Allocator Verification:** Confirmed `src/allocator/linked_list.rs` is hand-written (intrusive singly linked list with memory reuse); `src/allocator/bump.rs` is also hand-written.
+- **Synchronization Verification:** Confirmed `src/sync/spinlock.rs` is hand-written (atomic CAS + contention metrics). Identified gap: kernel singletons outside `src/sync` still use `spin::Mutex`, and interrupt-safe spinlock is missing.
+- **Step 8 Hardware Reality Check:** CPUID is real (`__cpuid`); ACPI parser is real but relies on BIOS EBDA scanning; NVMe controller is simulated in-memory; package managers (`apt`/`snap`) execute simulated text outputs without ring 3 user mode.
+- **Test Suite Verification:** Verified 16 test suites; executed `kthread_ready_queue` and `ca6_demo` cleanly in QEMU with all tests passing.
+- **Real Laptop Hardware Specs (Host):**
+  - CPU: Intel Core i5-1335U (10 cores: 2P + 8E, 12 threads)
+  - GPU: Intel Iris Xe Graphics (`PCI\VEN_8086&DEV_A7A1`, 1920x1200 @ 60Hz 32bpp)
+  - Storage: Western Digital PC SN5000S NVMe SSD 512 GB
+  - Keyboard: Standard PS/2 via EC emulation (`ACPI\HPQ8001`)
+  - Touchpad: ELAN Input Device (`HID\ELAN07CF`)
+  - USB Controllers: Intel USB 3.10 xHCI (`VEN_8086&DEV_51ED`), Intel USB 3.20 xHCI (`VEN_8086&DEV_A71E`), USB4 Host Router (`VEN_8086&DEV_A73E`)
+  - WiFi: MediaTek MT7921 Wi-Fi 6 (`PCI\VEN_14C3&DEV_7961`, Subsystem `1A3B:4682`)
+  - Firmware: UEFI Class 3 (No CSM / No legacy BIOS)
+  - Secure Boot: **Enabled** (`UEFISecureBootEnabled = 1` in Windows registry)
+- **UEFI Migration Recommendation:** Evaluated `bootloader 0.11` vs `Limine`. Recommended `bootloader 0.11` (`bootloader_api 0.11.17` + host image builder crate) for native Rust integration and Windows compatibility.
 
 ### CA-6 Step A10: Final Submission Package & Viva Voce Preparation ✅
 - Conducted full audit across all 45 sections of the CA-6 specification, verifying 100% compliance across Layers 1–10, TC1–TC6, Track C specialization, unsafe policies, performance evidence, and submission packages.
