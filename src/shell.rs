@@ -21,8 +21,8 @@ pub fn set_boot_time(ms: u64, us: u64, freq_mhz: u64) {
 pub fn print_prompt() {
     let cwd = VFS.lock().current_path.clone();
     let prompt_str = if cwd.is_empty() { "/" } else { &cwd };
-    print!("micro_os:{}> ", prompt_str);
-    serial_print!("micro_os:{}> ", prompt_str);
+    print!("venos:{}> ", prompt_str);
+    serial_print!("venos:{}> ", prompt_str);
 }
 
 /// Asynchronous interactive shell loop.
@@ -118,16 +118,16 @@ pub fn execute_command(input: &str) {
         "shutdown" => cmd_shutdown(),
         unknown => {
             println!(
-                "micro_os: unknown command: '{}'. Type 'help' for a list of commands.",
+                "venos: unknown command: '{}'. Type 'help' for a list of commands.",
                 unknown
             );
-            serial_println!("micro_os: unknown command: '{}'", unknown);
+            serial_println!("venos: unknown command: '{}'", unknown);
         }
     }
 }
 
 fn cmd_help() {
-    println!("MicroOS Shell - Available Commands:");
+    println!("VenOS Shell - Available Commands:");
     println!("  help                 - Display this list of available commands");
     println!("  clear                - Clear the VGA display buffer");
     println!("  echo <msg>           - Print the given message to screen and serial");

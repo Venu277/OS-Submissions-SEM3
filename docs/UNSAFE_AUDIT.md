@@ -25,6 +25,7 @@
 | **U-09** | `src/scheduler/mod.rs` | 300 | Invoke assembly `switch_context` during involuntary timer preemption `timer_tick()`. | `prev_ptr` and `next_ptr` point to valid heap-pinned `CpuContext` structs. Executed in interrupt context (IF=0). | `tests/preemptive_scheduling.rs` compute-bound preemption test. |
 | **U-10** | `src/allocator/bump.rs` | 35, 63 | Initialize bump bounds and reset bump pointer on complete deallocation. | Memory range `[heap_start .. heap_start + heap_size]` is mapped and unused. Raw dealloc does not free invalid memory. | `alloc::2_bump_allocator_sequential_and_reset`, `tests/allocator_benchmark.rs`. |
 | **U-11** | `src/allocator.rs` | 156, 170, 227 | Benchmark dual allocators in dedicated 32 KiB test heap buffer and measure cycle latencies via `_rdtsc()`. | Test buffer is dynamically allocated on kernel heap; pointer arithmetic bounded to `[buffer_base .. buffer_base + 32KiB]`. | `alloc::4_benchmark_100_blocks_comparison`, `tests/allocator_benchmark.rs`. |
+| **U-12** | `src/framebuffer.rs` | 247 | Access linear GOP framebuffer slice (`&'static mut [u8]`) passed by UEFI `bootloader_api::info::FrameBuffer`. | Bootloader configures identity mapping for linear framebuffer; buffer bounds verified via `info.byte_len` before any pixel write. | Verified in QEMU with EDK2 OVMF firmware and graphical text output. |
 
 ---
 

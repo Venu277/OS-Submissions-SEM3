@@ -127,16 +127,17 @@ lazy_static! {
     });
 }
 
-#[macro_export]
-macro_rules! print {
-    ($($arg:tt)*) => ($crate::vga_buffer::_print(format_args!($($arg)*)));
-}
-
-#[macro_export]
-macro_rules! println {
-    () => ($crate::print!("\n"));
-    ($($arg:tt)*) => ($crate::print!("{}\n", format_args!($($arg)*)));
-}
+// Legacy VGA macros commented out in favor of UEFI GOP FrameBuffer console in src/framebuffer.rs
+// #[macro_export]
+// macro_rules! print {
+//     ($($arg:tt)*) => ($crate::vga_buffer::_print(format_args!($($arg)*)));
+// }
+//
+// #[macro_export]
+// macro_rules! println {
+//     () => ($crate::print!("\n"));
+//     ($($arg:tt)*) => ($crate::print!("{}\n", format_args!($($arg)*)));
+// }
 
 pub fn clear_screen() {
     x86_64::instructions::interrupts::without_interrupts(|| {

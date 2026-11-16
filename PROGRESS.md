@@ -10,6 +10,17 @@
 
 ## What Is Done
 
+### Step V1: UEFI Boot & Framebuffer Console ✅
+- **UEFI Migration:** Migrated kernel boot to pure 64-bit UEFI via `bootloader_api 0.11.17` using `BootloaderConfig` (dynamic physical memory mapping and native GOP framebuffer handover).
+- **Host Image Generator:** Created host CLI crate `builder/` with `bootloader = "0.11.17"` generating valid FAT32 GPT UEFI disk images (`target/venos-uefi.img`, 11.6 MB) containing `\EFI\BOOT\BOOTX64.EFI`.
+- **Graphical GOP Text Console:** Implemented `src/framebuffer.rs` software text console using the anti-aliased `noto-sans-mono-bitmap` font (8x16 glyphs) with vertical hardware scrolling, automatic line wrapping, RGB/BGR pixel blending, and color attributes.
+- **VGA Buffer Deprecation:** Deprecated legacy `0xb8000` text macros; routed `print!` and `println!` through `framebuffer::_print` with dual-output UART serial mirroring.
+- **Memory Subsystem Adaptation:** Updated `src/memory.rs` `BootInfoFrameAllocator` to consume `bootloader_api::info::MemoryRegions` and map the 256 KiB kernel heap without BIOS assumptions.
+- **VenOS Branding:** Updated boot banners, help screens, and shell prompt to `venos:/>`.
+- **Automated Tooling:** Added `scripts/build_uefi.ps1` and `scripts/run_uefi.ps1` automating build and QEMU OVMF execution.
+- **Verification Gate:** Verified UEFI boot in QEMU with EDK2 OVMF firmware (`edk2-x86_64-code.fd`). Shell prompt reached in **577.672 ms** (calibrated @ 2502 MHz, 1.445G TSC ticks). Captured execution trace in `traces/step_v1_uefi_boot.log`.
+- **Unsafe Audit:** Documented GOP framebuffer slice access (U-12) in `docs/UNSAFE_AUDIT.md`.
+
 ### Step V0: Read-Only System Audit & Gap Analysis ✅
 - **Repository Audit:** Completed full forensic audit across all 45 sections of the CA-6 specification.
 - **CA-6 Compliance & Gap Analysis:** Authored `docs/GAP_ANALYSIS.md` detailing Present/Partial/Missing status across boot, console, task representation, ready queue, Round Robin scheduling, timer preemption, synchronization, memory allocation, TC1–TC6 test cases, Track C specialization, and final deliverables.

@@ -28,6 +28,8 @@
 | Step 10 | Snap Package Store (Containers, Mounts, `snap.yaml`) | 227.163 ms | ~1.5 s | Ready | Dynamic PIT Ch2 calibrated TSC (@ 2493 MHz) | 2026-11-15 |
 | **Step 11** | **Final Release Integration & System Smoke Verification** | **216.105 ms** | **~1.5 s** | Ready | **Dynamic PIT Ch2 calibrated TSC (@ 2495 MHz)** | 2026-11-15 |
 | **Step A1** | **CA-6 Core Build Mode (`ca6-core` / clean scheduler baseline)** | **190.479 ms** | **~1.3 s** | Ready | **Dynamic PIT Ch2 calibrated TSC (@ 2495 MHz)** | 2026-11-15 |
+| **Step V0** | **Read-Only System Audit & CA-6 Gap Analysis** | **190.479 ms** | **~1.3 s** | Ready | **Baseline QEMU/SeaBIOS run** | 2026-11-16 |
+| **Step V1** | **UEFI Boot (`bootloader 0.11`) & GOP Framebuffer Console** | **577.672 ms** | **~2.1 s** | — | **QEMU/OVMF (EDK2 x86_64, TSC @ 2502 MHz, 1.445G ticks)** | 2026-11-16 |
 
 ---
 
