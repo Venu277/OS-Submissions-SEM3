@@ -34,10 +34,13 @@
 | **Step V3** | **Input Subsystem, Diagnostics & In-Kernel Trace Ring Buffer (512-record BSS buffer, dmesg, parse_trace.py)** | **716.322 ms** | **~2.1 s** | — | **QEMU/OVMF (EDK2 x86_64, TSC @ 2500 MHz, 1.791G ticks)** | 2026-11-16 |
 | **Step V4** | **Self-Written Allocator Verification & Layer 8 Hardening (Intrusive LL vs Bump, Dual Bootloader Map)** | **559.001 ms** | **~2.0 s** | — | **QEMU/OVMF (EDK2 x86_64, TSC @ 2498 MHz, 1.396G ticks)** | 2026-11-16 |
 | **Step V5** | **Task Representation & Ready Queue (KThread, CpuContext, 16K Stack + Canary, TC1-TC6)** | **560.011 ms** | **~2.0 s** | — | **QEMU/OVMF (EDK2 x86_64, TSC @ 2498 MHz, 1.399G ticks)** | 2026-11-16 |
+| **Step V6** | **Round Robin Scheduler & Assembly Context Switch (AMD64 switch_context, ABI callee-saved, yield_now)** | **1248.373 ms** | **~2.2 s** | — | **QEMU/OVMF (EDK2 x86_64, TSC @ 2495 MHz, 3.115G ticks)** | 2026-11-16 |
 
 ---
 
 ## Notes
+
+- In Step V6, the cooperative Round Robin scheduler and AMD64 assembly context switch routine (`switch_context`) were verified in QEMU. The low-level assembly switch cleanly preserves System V ABI callee-saved registers (`r15`, `r14`, `r13`, `r12`, `rbx`, `rbp`), `rflags`, and `rsp`, resuming via `ret`. The test verified 3 concurrent worker threads executing in exact interleaved round-robin order `[1, 2, 3, 1, 2, 3, 1, 2, 3]` and 3/3 terminated threads successfully reaped. Boot time to shell prompt: **1248.373 ms** (calibrated @ 2495 MHz, raw trace: `traces/step_v6_round_robin_switch.log`).
 
 - In Step V5, kernel thread representations (`KThread`, `ThreadId`, `ThreadState`, `CpuContext`, `ReadyQueue`) and stack canary overflow guards were verified across TC1 through TC6. Boot time to shell prompt: **560.011 ms** (calibrated @ 2498 MHz, raw trace: `traces/step_v5_task_ready_queue.log`).
 

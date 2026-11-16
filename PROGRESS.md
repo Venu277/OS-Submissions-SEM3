@@ -10,6 +10,13 @@
 
 ## What Is Done
 
+### Step V6: Round Robin Scheduler & Assembly Context Switch (CA-6 Layer 5) ✅
+- **AMD64 Assembly Context Switch (`switch_context`):** Implemented in `src/scheduler/context_switch.rs` using `core::arch::global_asm!`. Conforms to AMD64 System V ABI: preserves callee-saved registers (`r15`, `r14`, `r13`, `r12`, `rbx`, `rbp`), arithmetic flags (`rflags`), and stack pointer (`rsp`), switching to the target thread's stack and popping the instruction pointer via `ret`.
+- **Cooperative Multitasking & Dispatch Loop:** Verified `yield_now()`, `schedule()`, and `thread_exit_trampoline()` in `src/scheduler/mod.rs`. Finished threads transition to `ThreadState::Terminated` and are reaped via `reap_terminated()`.
+- **Execution Order Verification:** Verified `tests/round_robin_switch.rs` in QEMU: 3 concurrent worker threads interleaved in exact deterministic round-robin order `[1, 2, 3, 1, 2, 3, 1, 2, 3]` and 3/3 task stacks were cleanly reaped (`[ok]`).
+- **Live QEMU/OVMF Verification:** Boot time to shell recorded at **1248.373 ms** (calibrated @ 2495 MHz). Captured execution trace in `traces/step_v6_round_robin_switch.log`.
+- **Documentation:** Authored `docs/STEP_V06_round_robin_switch.md` and updated `BOOT_TIMES.md`.
+
 ### Step V5: Task Representation & Ready Queue (CA-6 Layers 4 & 5) ✅
 - **Task Representation (`KThread`):** Verified `KThread` with monotonic `ThreadId`, four-state lifecycle model (`Ready`, `Running`, `Blocked`, `Terminated`), and `CpuContext` (r15, r14, r13, r12, rbx, rbp, rsp, rflags, rip) conforming to System V AMD64 ABI.
 - **Stack Allocation & Stack Canary Guard:** Verified 16 KiB dedicated stack allocation with `0xCA60_DEAD_BEEF_0001` stack canary guard at stack base, detecting and halting stack overflows.
