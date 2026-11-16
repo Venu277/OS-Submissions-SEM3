@@ -10,6 +10,14 @@
 
 ## What Is Done
 
+### Step V8: Synchronization Subsystem — Hand-Written Spinlock (CA-6 Layer 7) ✅
+- **Hand-Written Spinlock Implementation:** Verified `Spinlock<T>` in `src/sync/spinlock.rs` using `core::sync::atomic::AtomicBool` with zero external crate dependencies. Implemented CAS with Acquire/Release memory ordering and `core::hint::spin_loop()` (x86 `PAUSE`).
+- **RAII Guard Pattern:** Implemented `SpinlockGuard<T>` providing safe exclusive `Deref` / `DerefMut` access and deterministic lock release upon `drop()`.
+- **Contention Telemetry & Diagnostics:** Built-in tracking of `acquisitions`, `contentions`, `spins_waited`, `max_spins`, and `hold_ticks`. Integrated structured trace events (`LOCK_ACQ`, `LOCK_REL`, `LOCK_WAIT`) into kernel BSS ring buffer.
+- **Repeatable Integration Test:** Verified `tests/concurrency_sync.rs` in QEMU: mutual exclusion, non-reentrant rejection via `try_lock()`, and multi-task preemptive contention (184,814 spins waited, 1 contention, all reaped) (`[ok]`).
+- **Live QEMU/OVMF Verification:** Boot time to shell recorded at **1624.377 ms** (calibrated @ 2496 MHz). Captured execution trace in `traces/step_v8_sync.log`.
+- **Documentation:** Authored `docs/STEP_V08_synchronization.md` and updated `BOOT_TIMES.md`.
+
 ### Step V7: Timer-Driven Preemptive Scheduling (CA-6 Layer 6) ✅
 - **PIT 100 Hz Timer Interrupt Integration:** Linked PIT Channel 0 hardware timer interrupts (IRQ 0 / vector 32) via `src/interrupts.rs:timer_interrupt_handler` directly to `scheduler::timer_tick()`.
 - **Preemption Control & RAII Guard:** Implemented `enable_preemption()`, `is_preemption_enabled()`, and `PreemptionGuard` in `src/scheduler/mod.rs` ensuring re-entrancy prevention inside interrupt handlers and critical sections.
