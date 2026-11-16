@@ -39,10 +39,13 @@
 | **Step V8** | **Synchronization Subsystem (Hand-written Spinlock, CAS Acquire/Release, contention telemetry)** | **1624.377 ms** | **~2.2 s** | — | **QEMU/OVMF (EDK2 x86_64, TSC @ 2496 MHz, 4.054G ticks)** | 2026-11-16 |
 | **Step V9** | **Track C Concurrency Specialization (Lock Ranking hierarchy, Coffman Condition 4 elimination, DEADLOCK_PREVENT)** | **630.962 ms** | **~2.0 s** | — | **QEMU/OVMF (EDK2 x86_64, TSC @ 2514 MHz, 1.586G ticks)** | 2026-11-16 |
 | **Step V10** | **Integrated Demo & Test Cases TC1–TC6 (Layers 1-10 verified, parse_trace.py, 4 evaluation plots)** | **1268.942 ms** | **~2.2 s** | — | **QEMU/OVMF (EDK2 x86_64, TSC @ 2499 MHz, 3.171G ticks)** | 2026-11-16 |
+| **Step V11** | **Networking Status & MediaTek MT7921 Disclosure (Hardware audit, NETWORKING_STATUS.md)** | **1477.311 ms** | **~2.2 s** | — | **QEMU/OVMF (EDK2 x86_64, TSC @ 2500 MHz, 3.693G ticks)** | 2026-11-16 |
 
 ---
 
 ## Notes
+
+- In Step V11, networking and hardware status disclosures were documented in `docs/NETWORKING_STATUS.md`. The target HP Pavilion laptop contains a physical MediaTek MT7921 Wi-Fi 6 PCIe NIC (`0x14C3:0x7961`) detected on the PCI bus with simulated software fallback, but no physical RJ-45 Ethernet. In virtualized QEMU environments, the emulated Intel e1000 Gigabit NIC (`0x8086:0x100E`) and smoltcp network stack provide network connectivity. Boot time to shell prompt: **1477.311 ms** (calibrated @ 2500 MHz, raw trace: `traces/step_v11_networking_status.log`).
 
 - In Step V10, the end-to-end integrated demonstration (`tests/ca6_demo.rs` and `ca6 demo`) and required test suite (TC1–TC6) were verified in QEMU. All 10 architectural layers were validated in a single unified test. The full smoke integration test (`tests/smoke_integration.rs`) verified CPU discovery, MicroFS filesystem hierarchy, WPA2 4-Way handshake WiFi simulation, Debian `apt`/`dpkg`, and Snap container management. Trace analysis (`scripts/parse_trace.py`) evaluated 569 machine events, generating updated CSV summaries, JSON metrics, and 4 high-resolution plots. Boot time to shell prompt: **1268.942 ms** (calibrated @ 2499 MHz, raw trace: `traces/step_v10_integrated_demo.log`).
 

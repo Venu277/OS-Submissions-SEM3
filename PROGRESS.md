@@ -10,6 +10,12 @@
 
 ## What Is Done
 
+### Step V11: Networking Status & Hardware Disclosures ✅
+- **Hardware Audit & Academic Integrity:** Created `docs/NETWORKING_STATUS.md` detailing the clear distinction between bare-metal hardware on the host HP Pavilion laptop (MediaTek MT7921 Wi-Fi 6 PCIe NIC `0x14C3:0x7961`, no native firmware driver, no physical RJ-45 Ethernet) and virtualized environments (emulated Intel e1000 Gigabit NIC `0x8086:0x100E`).
+- **Software 802.11 Protocol Simulation:** Documented `SimulatedWiFi` implementing the formal `WiFiDriver` trait, 2.4/5.8 GHz active channel scanning, and cryptographic WPA2 4-Way handshake state machine.
+- **Live QEMU/OVMF Verification:** Boot time to shell recorded at **1477.311 ms** (calibrated @ 2500 MHz). Captured execution trace in `traces/step_v11_networking_status.log`.
+- **Documentation:** Authored `docs/STEP_V11_networking_status.md` and updated `BOOT_TIMES.md`.
+
 ### Step V10: Integrated Demo & Test Cases TC1–TC6 (CA-6 Layer 10 & Section 16) ✅
 - **Full Architecture Demo (`tests/ca6_demo.rs` & `ca6 demo`):** Verified all 10 architectural layers in a single unified execution: Layer 1 (Boot/Interrupts), Layer 2 (Hardware Discovery), Layer 3 (Task Representation), Layer 4 (Ready Queue), Layer 5 (Round Robin Scheduler), Layer 6 (Preemption), Layer 7 (Synchronization), Layer 8 (Memory Allocators), Layer 9 (Shell/User Mode), and Layer 10 (Integrated Demo).
 - **TC1–TC6 Verification Matrix:** 100% verified across all required CA-6 test cases: TC1 (Two Tasks), TC2 (3–5 Tasks), TC3 (Boundary Cases), TC4 (Stress 50 Tasks & Contention), TC5 (Failure Cases: illegal state transitions, corrupted canaries, lock rank inversion), and TC6 (Repeatability: 10 cycles).
