@@ -10,6 +10,14 @@
 
 ## What Is Done
 
+### Step V10: Integrated Demo & Test Cases TC1–TC6 (CA-6 Layer 10 & Section 16) ✅
+- **Full Architecture Demo (`tests/ca6_demo.rs` & `ca6 demo`):** Verified all 10 architectural layers in a single unified execution: Layer 1 (Boot/Interrupts), Layer 2 (Hardware Discovery), Layer 3 (Task Representation), Layer 4 (Ready Queue), Layer 5 (Round Robin Scheduler), Layer 6 (Preemption), Layer 7 (Synchronization), Layer 8 (Memory Allocators), Layer 9 (Shell/User Mode), and Layer 10 (Integrated Demo).
+- **TC1–TC6 Verification Matrix:** 100% verified across all required CA-6 test cases: TC1 (Two Tasks), TC2 (3–5 Tasks), TC3 (Boundary Cases), TC4 (Stress 50 Tasks & Contention), TC5 (Failure Cases: illegal state transitions, corrupted canaries, lock rank inversion), and TC6 (Repeatability: 10 cycles).
+- **End-to-End System Smoke Integration:** Verified `tests/smoke_integration.rs` in QEMU: hardware profile, MicroFS VFS, WPA2 WiFi 4-Way handshake simulation, Debian `apt`/`dpkg`, and Snap container management.
+- **Python Trace Analytics & Publication Plots:** Re-analyzed 569 machine events with `scripts/parse_trace.py` (Python 3.11), generating `results/summary_table.csv`, `results/trace_metrics.json`, and 4 updated plots (`context_switches.png`, `lock_metrics.png`, `memory_distribution.png`, `trace_timeline.png`).
+- **Live QEMU/OVMF Verification:** Boot time to shell recorded at **1268.942 ms** (calibrated @ 2499 MHz). Captured execution trace in `traces/step_v10_integrated_demo.log`.
+- **Documentation:** Authored `docs/STEP_V10_integrated_demo.md` and updated `BOOT_TIMES.md`.
+
 ### Step V9: Track C Concurrency Specialization — Deadlock Prevention & Contention Telemetry (CA-6 Section 11) ✅
 - **Mathematical Deadlock Prevention:** Verified strict partial order lock acquisition (`RankedLock<T>` in `src/sync/ranked.rs`), eliminating Coffman Condition 4 (Circular Wait). Monotonic integer ranks enforce that threads can only acquire locks with rank strictly greater than any held rank.
 - **Deterministic Out-of-Order Rejection:** Reverse rank acquisition attempts are rejected in $O(1)$ time with `Err(LockRankError::HierarchyViolation)` and emit `DEADLOCK_PREVENT` trace events.
