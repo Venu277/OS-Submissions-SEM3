@@ -10,6 +10,14 @@
 
 ## What Is Done
 
+### Step V7: Timer-Driven Preemptive Scheduling (CA-6 Layer 6) ✅
+- **PIT 100 Hz Timer Interrupt Integration:** Linked PIT Channel 0 hardware timer interrupts (IRQ 0 / vector 32) via `src/interrupts.rs:timer_interrupt_handler` directly to `scheduler::timer_tick()`.
+- **Preemption Control & RAII Guard:** Implemented `enable_preemption()`, `is_preemption_enabled()`, and `PreemptionGuard` in `src/scheduler/mod.rs` ensuring re-entrancy prevention inside interrupt handlers and critical sections.
+- **Involuntary Quantum Preemption:** Integrated dynamic quantum accounting (`QUANTUM_EXPIRE`). Compute-bound tasks without voluntary yields are involuntarily preempted and moved to the back of the `ReadyQueue` upon quantum expiration.
+- **Fair Time-Slicing Verification:** Verified `tests/preemptive_scheduling.rs` in QEMU: RAII preemption guard, involuntary preemption of pure compute worker, and fair round-robin time slicing between concurrent workers (Task A = 44, Task B = 47) with all tasks reaped (`[ok]`).
+- **Live QEMU/OVMF Verification:** Boot time to shell recorded at **548.963 ms** (calibrated @ 2500 MHz). Captured execution trace in `traces/step_v7_preemption.log`.
+- **Documentation:** Authored `docs/STEP_V07_preemption.md` and updated `BOOT_TIMES.md`.
+
 ### Step V6: Round Robin Scheduler & Assembly Context Switch (CA-6 Layer 5) ✅
 - **AMD64 Assembly Context Switch (`switch_context`):** Implemented in `src/scheduler/context_switch.rs` using `core::arch::global_asm!`. Conforms to AMD64 System V ABI: preserves callee-saved registers (`r15`, `r14`, `r13`, `r12`, `rbx`, `rbp`), arithmetic flags (`rflags`), and stack pointer (`rsp`), switching to the target thread's stack and popping the instruction pointer via `ret`.
 - **Cooperative Multitasking & Dispatch Loop:** Verified `yield_now()`, `schedule()`, and `thread_exit_trampoline()` in `src/scheduler/mod.rs`. Finished threads transition to `ThreadState::Terminated` and are reaped via `reap_terminated()`.

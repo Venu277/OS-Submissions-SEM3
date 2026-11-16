@@ -35,10 +35,13 @@
 | **Step V4** | **Self-Written Allocator Verification & Layer 8 Hardening (Intrusive LL vs Bump, Dual Bootloader Map)** | **559.001 ms** | **~2.0 s** | — | **QEMU/OVMF (EDK2 x86_64, TSC @ 2498 MHz, 1.396G ticks)** | 2026-11-16 |
 | **Step V5** | **Task Representation & Ready Queue (KThread, CpuContext, 16K Stack + Canary, TC1-TC6)** | **560.011 ms** | **~2.0 s** | — | **QEMU/OVMF (EDK2 x86_64, TSC @ 2498 MHz, 1.399G ticks)** | 2026-11-16 |
 | **Step V6** | **Round Robin Scheduler & Assembly Context Switch (AMD64 switch_context, ABI callee-saved, yield_now)** | **1248.373 ms** | **~2.2 s** | — | **QEMU/OVMF (EDK2 x86_64, TSC @ 2495 MHz, 3.115G ticks)** | 2026-11-16 |
+| **Step V7** | **Timer-Driven Preemptive Scheduling (PIT 100 Hz IRQ 0, quantum slicing, involuntary context switch)** | **548.963 ms** | **~2.0 s** | — | **QEMU/OVMF (EDK2 x86_64, TSC @ 2500 MHz, 1.372G ticks)** | 2026-11-16 |
 
 ---
 
 ## Notes
+
+- In Step V7, timer-driven preemptive multitasking was verified in QEMU. Programmable Interval Timer (PIT) Channel 0 generates 100 Hz interrupts dispatching to `scheduler::timer_tick()`. A compute-bound worker with zero voluntary yields was successfully preempted upon quantum expiration, allowing an observer thread to schedule cleanly. Fair time-slicing was confirmed across multiple concurrent tasks (44 vs 47 compute iterations). Boot time to shell prompt: **548.963 ms** (calibrated @ 2500 MHz, raw trace: `traces/step_v7_preemption.log`).
 
 - In Step V6, the cooperative Round Robin scheduler and AMD64 assembly context switch routine (`switch_context`) were verified in QEMU. The low-level assembly switch cleanly preserves System V ABI callee-saved registers (`r15`, `r14`, `r13`, `r12`, `rbx`, `rbp`), `rflags`, and `rsp`, resuming via `ret`. The test verified 3 concurrent worker threads executing in exact interleaved round-robin order `[1, 2, 3, 1, 2, 3, 1, 2, 3]` and 3/3 terminated threads successfully reaped. Boot time to shell prompt: **1248.373 ms** (calibrated @ 2495 MHz, raw trace: `traces/step_v6_round_robin_switch.log`).
 
