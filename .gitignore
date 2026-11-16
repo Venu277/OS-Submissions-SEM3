@@ -3,6 +3,7 @@ build/
 *.iso
 *.vmdk
 *.img
+*.zip
 *.bin.bak
 *.log
 !traces/*.log

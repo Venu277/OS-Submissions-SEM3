@@ -10,6 +10,13 @@
 
 ## What Is Done
 
+### Step V12: Distribution Packaging & Release Engineering ✅
+- **Automated Release Pipeline (`scripts/package_release.ps1`):** Created automated packaging script compiling release kernel binary, generating UEFI GPT disk image via host builder, computing SHA-256 checksums, and building distribution ZIP archive (`dist/venos-uefi-v0.1.0-x86_64.zip`, 331 KB).
+- **Bare-Metal Flashing Guide (`docs/DISTRIBUTION_PACKAGING.md`):** Authored detailed flashing instructions for Windows (Rufus in DD Image mode) and Linux/macOS (`dd`). Documented UEFI Class 3 firmware requirements and Secure Boot disable procedure.
+- **Real Hardware Verification:** Booted and verified by user on physical HP Pavilion 15 laptop with 13th Gen Intel Core i5-1335U, Intel Iris Xe graphics, and Western Digital NVMe SSD.
+- **Live QEMU/OVMF Verification:** Boot time to shell recorded at **584.775 ms** (calibrated @ 2499 MHz). Captured execution trace in `traces/step_v12_distribution_packaging.log`.
+- **Documentation:** Authored `docs/STEP_V12_distribution_packaging.md` and updated `BOOT_TIMES.md`.
+
 ### Step V11: Networking Status & Hardware Disclosures ✅
 - **Hardware Audit & Academic Integrity:** Created `docs/NETWORKING_STATUS.md` detailing the clear distinction between bare-metal hardware on the host HP Pavilion laptop (MediaTek MT7921 Wi-Fi 6 PCIe NIC `0x14C3:0x7961`, no native firmware driver, no physical RJ-45 Ethernet) and virtualized environments (emulated Intel e1000 Gigabit NIC `0x8086:0x100E`).
 - **Software 802.11 Protocol Simulation:** Documented `SimulatedWiFi` implementing the formal `WiFiDriver` trait, 2.4/5.8 GHz active channel scanning, and cryptographic WPA2 4-Way handshake state machine.
