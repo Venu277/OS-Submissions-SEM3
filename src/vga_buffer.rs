@@ -160,6 +160,9 @@ pub fn _print(args: fmt::Arguments) {
     });
 }
 
+#[cfg(test)]
+use crate::println;
+
 #[test_case]
 fn test_println_simple() {
     println!("test_println_simple output");
