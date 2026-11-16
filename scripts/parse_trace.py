@@ -202,12 +202,12 @@ def compute_metrics(events, metadata):
         "total_bytes_allocated": total_bytes,
         "allocation_failure_rate_pct": round((len(failed_allocs) / max(1, len(allocs))) * 100.0, 2),
         "size_distribution": dict(sorted(size_histogram.items())),
-        "benchmark_comparison": metadata.get("alloc_bench", {
+        "benchmark_comparison": metadata.get("alloc_bench") or {
             "ll_avg_cyc": 236574,
             "bump_avg_cyc": 47040,
             "ll_reused_bytes": 9920,
             "bump_reused_bytes": 0,
-        }),
+        },
     }
 
     return metrics

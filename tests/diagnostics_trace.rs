@@ -46,6 +46,34 @@ fn main(_boot_info: &'static BootInfo) -> ! {
     diagnostics::trace_dealloc(128);
     serial_println!("[ok]");
 
+    // 5. Test In-Kernel Trace Ring Buffer (Zero-Allocation Inspection)
+    serial_print!("diag::4_trace_ring_buffer...\t");
+    let mut entries = [diagnostics::TraceRecord::default(); 16];
+    let count = diagnostics::TRACE_BUFFER.lock().copy_to_slice(&mut entries);
+    assert!(count >= 8, "Expected at least 8 events in ring buffer");
+    let total = diagnostics::TRACE_BUFFER.lock().total();
+    assert!(total >= 8, "Total events written should be >= 8");
+
+    // Test FIFO wrap-around on a dedicated TraceRingBuffer instance
+    let mut rb = diagnostics::TraceRingBuffer::new();
+    for i in 0..(diagnostics::TRACE_BUFFER_CAPACITY + 10) {
+        rb.push(diagnostics::TraceRecord {
+            tick: i as u64,
+            tsc: i as u64 * 100,
+            kind: diagnostics::TraceKind::Alloc,
+            task_id: i as u64,
+            param1: 64,
+            param2: 1,
+        });
+    }
+    assert_eq!(rb.count(), diagnostics::TRACE_BUFFER_CAPACITY);
+    assert_eq!(rb.total(), diagnostics::TRACE_BUFFER_CAPACITY + 10);
+    let mut wrap_entries = [diagnostics::TraceRecord::default(); diagnostics::TRACE_BUFFER_CAPACITY];
+    let wrap_count = rb.copy_to_slice(&mut wrap_entries);
+    assert_eq!(wrap_count, diagnostics::TRACE_BUFFER_CAPACITY);
+    assert_eq!(wrap_entries[0].task_id, 10);
+    serial_println!("[ok]");
+
     serial_println!("==================================================");
     serial_println!("CA-6 Diagnostics & Tracing Test: ALL PASSED");
     serial_println!("==================================================");

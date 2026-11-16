@@ -84,6 +84,7 @@ pub fn execute_command(input: &str) {
     match command {
         "help" => cmd_help(),
         "sysinfo" => cmd_sysinfo(),
+        "dmesg" | "trace" => cmd_dmesg(&args),
         "clear" => cmd_clear(),
         "echo" => cmd_echo(&args),
         "uptime" => cmd_uptime(),
@@ -131,6 +132,7 @@ fn cmd_help() {
     println!("VenOS Shell - Available Commands:");
     println!("  help                 - Display this list of available commands");
     println!("  sysinfo              - Display hardware discovery & adaptation summary");
+    println!("  dmesg / trace        - Dump in-kernel circular trace ring buffer (-a for all, -c clear)");
     println!("  clear                - Clear the VGA display buffer");
     println!("  echo <msg>           - Print the given message to screen and serial");
     println!("  uptime               - Display system uptime and timer ticks");
@@ -986,6 +988,66 @@ fn cmd_sysinfo() {
 
     println!("==================================================");
     serial_println!("Shell command 'sysinfo' executed.");
+}
+
+fn cmd_dmesg(args: &[&str]) {
+    if !args.is_empty() && (args[0] == "-c" || args[0] == "--clear") {
+        crate::diagnostics::TRACE_BUFFER.lock().clear();
+        println!("dmesg: In-kernel trace ring buffer cleared.");
+        serial_println!("dmesg: In-kernel trace ring buffer cleared.");
+        return;
+    }
+
+    let records = crate::diagnostics::TRACE_BUFFER.lock().snapshot();
+    let total = crate::diagnostics::TRACE_BUFFER.lock().total();
+    println!(
+        "In-Kernel Trace Ring Buffer (showing {} of {} events):",
+        records.len(),
+        total
+    );
+    serial_println!(
+        "In-Kernel Trace Ring Buffer (showing {} of {} events):",
+        records.len(),
+        total
+    );
+
+    if records.is_empty() {
+        println!("  (no trace events recorded yet)");
+        serial_println!("  (no trace events recorded yet)");
+        return;
+    }
+
+    let show_limit = if args.contains(&"-a") || args.contains(&"--all") {
+        records.len()
+    } else {
+        records.len().min(30)
+    };
+
+    let start_idx = records.len().saturating_sub(show_limit);
+    if start_idx > 0 {
+        println!("  ... [{} earlier events omitted; pass '-a' to show all] ...", start_idx);
+    }
+
+    for r in &records[start_idx..] {
+        println!(
+            "  [{:05} tick | {:012} tsc] {:<16} task={:<3} p1={:#x} p2={:#x}",
+            r.tick,
+            r.tsc,
+            r.kind.as_str(),
+            r.task_id,
+            r.param1,
+            r.param2
+        );
+        serial_println!(
+            "  [{:05} tick | {:012} tsc] {:<16} task={:<3} p1={:#x} p2={:#x}",
+            r.tick,
+            r.tsc,
+            r.kind.as_str(),
+            r.task_id,
+            r.param1,
+            r.param2
+        );
+    }
 }
 
 fn cmd_nvme(args: &[&str]) {

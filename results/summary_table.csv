@@ -1,24 +1,24 @@
 Category,Metric,Value,Reference
 Boot Performance,Baseline Core Boot Time,190.479 ms,BOOT_TIMES.md
-Boot Performance,Full Demo Boot Time,34267.203 ms,step_a8_demo.log
-Boot Performance,Calibrated TSC Frequency,2502 MHz,interrupts::calibrate_tsc
+Boot Performance,Full Demo Boot Time,827.375 ms,step_a8_demo.log
+Boot Performance,Calibrated TSC Frequency,2490 MHz,interrupts::calibrate_tsc
 Boot Performance,Timer Tick Frequency,100 Hz (10 ms period),PIT 8253 Channel 0
-Context Switching,Total Context Switches,26,Layer 5 Round Robin
-Context Switching,Switch Rate,0.0364 switches/tick,step_a8_demo.log
-Context Switching,Switches per Second,3.64 switches/s,Layer 5 Round Robin
-Context Switching,Yield Switches,17,Voluntary yield_now()
-Context Switching,Terminate Switches,7,Task completion reaping
-Context Switching,Quantum Preempt Switches,2,Involuntary IRQ0 preemption
-Preemption,Quantum Expirations,2,Layer 6 Preemption
+Context Switching,Total Context Switches,0,Layer 5 Round Robin
+Context Switching,Switch Rate,0.0 switches/tick,step_a8_demo.log
+Context Switching,Switches per Second,0.0 switches/s,Layer 5 Round Robin
+Context Switching,Yield Switches,0,Voluntary yield_now()
+Context Switching,Terminate Switches,0,Task completion reaping
+Context Switching,Quantum Preempt Switches,0,Involuntary IRQ0 preemption
+Preemption,Quantum Expirations,0,Layer 6 Preemption
 Preemption,Preemption Latency,"< 1 tick (< 10 ms, immediate within timer ISR)",IRQ0 Timer Interrupt
-Synchronization,Total Lock Acquisitions,26,Layer 7 Spinlock
+Synchronization,Total Lock Acquisitions,0,Layer 7 Spinlock
 Synchronization,Lock Contention Events,10,step_a6_sync.log
 Synchronization,Lock Contention Rate,50.0%,step_a6_sync.log
 Synchronization,Max Spin Loop Latency,31520 spins,step_a6_sync.log
-Deadlock Prevention,Hierarchy Violations Caught,1,Track C Lock Ranking
-Memory Management,Total Dynamic Allocations,200,Layer 8 GlobalAlloc
-Memory Management,Total Dynamic Deallocations,100,Layer 8 GlobalAlloc
-Memory Management,Total Bytes Allocated,39680 Bytes,100-Block Workload
+Deadlock Prevention,Hierarchy Violations Caught,0,Track C Lock Ranking
+Memory Management,Total Dynamic Allocations,0,Layer 8 GlobalAlloc
+Memory Management,Total Dynamic Deallocations,0,Layer 8 GlobalAlloc
+Memory Management,Total Bytes Allocated,0 Bytes,100-Block Workload
 Memory Management,Allocation Failure Rate,0.0%,step_a8_demo.log
 Memory Benchmark,Linked List Average Latency,236574 cycles,benchmark_allocator_comparison
 Memory Benchmark,Bump Allocator Average Latency,47040 cycles,benchmark_allocator_comparison

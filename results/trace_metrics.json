@@ -1,45 +1,35 @@
 {
   "timeline": {
-    "min_tick": 60,
-    "max_tick": 775,
-    "total_ticks": 715,
-    "total_events": 569,
+    "min_tick": 0,
+    "max_tick": 0,
+    "total_ticks": 0,
+    "total_events": 0,
     "pit_tick_period_ms": 10.0
   },
   "boot": {
-    "boot_time_ms": 34267.203,
-    "tsc_ticks": 85764923491,
-    "freq_mhz": 2502,
+    "boot_time_ms": 827.375,
+    "tsc_ticks": 2060181130,
+    "freq_mhz": 2490,
     "baseline_core_boot_ms": 190.479
   },
   "context_switches": {
-    "total_switches": 26,
-    "switch_rate_per_tick": 0.0364,
-    "switch_rate_per_second": 3.64,
-    "reasons": {
-      "yield": 17,
-      "terminate": 7,
-      "quantum": 2
-    }
+    "total_switches": 0,
+    "switch_rate_per_tick": 0.0,
+    "switch_rate_per_second": 0.0,
+    "reasons": {}
   },
   "preemption": {
-    "quantum_expires": 2,
-    "preempt_switches": 2,
-    "avg_preempt_latency_ticks": 0.0,
+    "quantum_expires": 0,
+    "preempt_switches": 0,
+    "avg_preempt_latency_ticks": 0,
     "max_preempt_latency_ticks": 0,
     "responsiveness_str": "< 1 tick (< 10 ms, immediate within timer ISR)"
   },
   "synchronization": {
-    "total_acquisitions": 26,
-    "total_releases": 26,
-    "deadlock_violations_prevented": 1,
-    "runtime_sync_metrics": {
-      "acquisitions": 20,
-      "contentions": 0,
-      "spins_waited": 0,
-      "max_spins": 0,
-      "hold_ticks": 25
-    },
+    "total_acquisitions": 0,
+    "total_releases": 0,
+    "deadlock_violations_prevented": 0,
+    "runtime_sync_metrics": null,
     "dedicated_contention_benchmark": {
       "source": "traces/step_a6_sync.log",
       "acquisitions": 20,
@@ -51,17 +41,11 @@
     }
   },
   "memory": {
-    "total_allocations": 200,
-    "total_deallocations": 100,
-    "total_bytes_allocated": 39680,
+    "total_allocations": 0,
+    "total_deallocations": 0,
+    "total_bytes_allocated": 0,
     "allocation_failure_rate_pct": 0.0,
-    "size_distribution": {
-      "32": 40,
-      "64": 40,
-      "128": 40,
-      "256": 40,
-      "512": 40
-    },
+    "size_distribution": {},
     "benchmark_comparison": {
       "ll_avg_cyc": 236574,
       "bump_avg_cyc": 47040,

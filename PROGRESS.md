@@ -10,6 +10,16 @@
 
 ## What Is Done
 
+### Step V3: Input Subsystem, Structured Logging & Trace Ring Buffer ✅
+- **Input Pipeline Verification:** Verified PS/2 keyboard controller (i8042) interrupt handling on IRQ 1 (vector 33), atomic SPSC lock-free scancode queue (`ScancodeQueue`), and async task wakeup for HP laptop EC keyboard emulation (`ACPI\HPQ8001`).
+- **In-Kernel Trace Ring Buffer:** Implemented `TraceRingBuffer` in `src/diagnostics.rs` storing 512 compact `TraceRecord` structures in kernel BSS without heap allocation. Supports FIFO wrap-around overwrite and zero-allocation inspection via `copy_to_slice()`.
+- **Trace Format Specification:** Authored `docs/TRACE_FORMAT.md` formalizing line grammar, taxonomy, key-value mappings (`SWITCH`, `TASK_STATE`, `ALLOC`, `DEALLOC`, `LOCK_ACQ`, `LOCK_REL`, `LOCK_WAIT`, `DEADLOCK_PREVENT`, `QUANTUM_EXPIRE`), and CSV schema.
+- **Shell Diagnostics Command:** Implemented `dmesg` / `trace` command in `src/shell.rs` with `-a` (dump all) and `-c` (clear buffer) flags.
+- **Python Trace Analysis Suite:** Verified `scripts/parse_trace.py` with Python 3.11, generating `results/summary_table.csv`, `results/trace_metrics.json`, and 4 Matplotlib evaluation figures.
+- **Repeatable Integration Test:** Extended `tests/diagnostics_trace.rs` verifying log levels, dispatch macros, structured traces, and in-kernel ring buffer wrap-around. All tests pass cleanly (`[ok]`).
+- **Live QEMU/OVMF Verification:** Boot time to shell recorded at **716.322 ms** (calibrated @ 2500 MHz). Captured execution trace in `traces/step_v3_input_logging.log`.
+- **Documentation:** Authored `docs/STEP_V03_input_logging_tracing.md` and updated `BOOT_TIMES.md`.
+
 ### Step V2: Native Hardware Discovery & Dynamic System Adaptation ✅
 - **Display Resolution & Aspect Ratio:** Implemented `AspectRatio` classification in `src/framebuffer.rs` using Euclidean `gcd()`. Automatically derives 16:10 (1920x1200 host laptop, 1280x800 QEMU), 16:9, 4:3, 5:4, and 3:2; derives console text grid dimensions and auto-scales fonts for ultra HiDPI.
 - **Physical Memory Accounting:** Added atomic physical RAM metrics (`src/memory.rs`) tracking total and usable RAM across all bootloader memory map segments.
