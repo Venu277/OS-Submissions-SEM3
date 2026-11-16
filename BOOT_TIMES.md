@@ -37,10 +37,13 @@
 | **Step V6** | **Round Robin Scheduler & Assembly Context Switch (AMD64 switch_context, ABI callee-saved, yield_now)** | **1248.373 ms** | **~2.2 s** | — | **QEMU/OVMF (EDK2 x86_64, TSC @ 2495 MHz, 3.115G ticks)** | 2026-11-16 |
 | **Step V7** | **Timer-Driven Preemptive Scheduling (PIT 100 Hz IRQ 0, quantum slicing, involuntary context switch)** | **548.963 ms** | **~2.0 s** | — | **QEMU/OVMF (EDK2 x86_64, TSC @ 2500 MHz, 1.372G ticks)** | 2026-11-16 |
 | **Step V8** | **Synchronization Subsystem (Hand-written Spinlock, CAS Acquire/Release, contention telemetry)** | **1624.377 ms** | **~2.2 s** | — | **QEMU/OVMF (EDK2 x86_64, TSC @ 2496 MHz, 4.054G ticks)** | 2026-11-16 |
+| **Step V9** | **Track C Concurrency Specialization (Lock Ranking hierarchy, Coffman Condition 4 elimination, DEADLOCK_PREVENT)** | **630.962 ms** | **~2.0 s** | — | **QEMU/OVMF (EDK2 x86_64, TSC @ 2514 MHz, 1.586G ticks)** | 2026-11-16 |
 
 ---
 
 ## Notes
+
+- In Step V9, Track C Concurrency Specialization was verified in QEMU. VenOS mathematically prevents deadlocks by enforcing strict partial order lock acquisition (`RankedLock<T>`), eliminating Coffman Condition 4 (Circular Wait). Attempted out-of-order acquisitions are deterministically detected and rejected in $O(1)$ time with structured `DEADLOCK_PREVENT` trace logging. Nested hierarchical unwinding was verified up to three levels ($300 \to 200 \to 100 \to 0$). Boot time to shell prompt: **630.962 ms** (calibrated @ 2514 MHz, raw trace: `traces/step_v9_track_c_concurrency.log`).
 
 - In Step V8, hand-written synchronization primitives (`Spinlock<T>` and RAII `SpinlockGuard`) were verified in QEMU. The implementation employs `AtomicBool` CAS with Acquire/Release semantics, x86 `PAUSE` spin loops, non-blocking `try_lock()`, and automatic contention telemetry (`acquisitions`, `contentions`, `spins_waited`, `max_spins`, `hold_ticks`). Under preemptive competition between holder and contender worker tasks, mutual exclusion was guaranteed, logging 184,814 spin cycles and 1 contention event. Boot time to shell prompt: **1624.377 ms** (calibrated @ 2496 MHz, raw trace: `traces/step_v8_sync.log`).
 

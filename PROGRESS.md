@@ -10,6 +10,15 @@
 
 ## What Is Done
 
+### Step V9: Track C Concurrency Specialization — Deadlock Prevention & Contention Telemetry (CA-6 Section 11) ✅
+- **Mathematical Deadlock Prevention:** Verified strict partial order lock acquisition (`RankedLock<T>` in `src/sync/ranked.rs`), eliminating Coffman Condition 4 (Circular Wait). Monotonic integer ranks enforce that threads can only acquire locks with rank strictly greater than any held rank.
+- **Deterministic Out-of-Order Rejection:** Reverse rank acquisition attempts are rejected in $O(1)$ time with `Err(LockRankError::HierarchyViolation)` and emit `DEADLOCK_PREVENT` trace events.
+- **Hierarchical Nesting & RAII Unwinding:** Verified LIFO unwinding across 3-level lock hierarchies ($300 \to 200 \to 100 \to 0$) via `RankedLockGuard`.
+- **Contention Telemetry & Shell Demo:** Verified `Spinlock` telemetry metrics and `ca6 sync` CLI command (`demo_synchronization()`).
+- **Repeatable Integration Test:** Verified Tests 3, 4, and 5 in `tests/concurrency_sync.rs` in QEMU: all passed cleanly (`[ok]`).
+- **Live QEMU/OVMF Verification:** Boot time to shell recorded at **630.962 ms** (calibrated @ 2514 MHz). Captured execution trace in `traces/step_v9_track_c_concurrency.log`.
+- **Documentation:** Authored `docs/STEP_V09_track_c_concurrency.md` and updated `BOOT_TIMES.md`.
+
 ### Step V8: Synchronization Subsystem — Hand-Written Spinlock (CA-6 Layer 7) ✅
 - **Hand-Written Spinlock Implementation:** Verified `Spinlock<T>` in `src/sync/spinlock.rs` using `core::sync::atomic::AtomicBool` with zero external crate dependencies. Implemented CAS with Acquire/Release memory ordering and `core::hint::spin_loop()` (x86 `PAUSE`).
 - **RAII Guard Pattern:** Implemented `SpinlockGuard<T>` providing safe exclusive `Deref` / `DerefMut` access and deterministic lock release upon `drop()`.
