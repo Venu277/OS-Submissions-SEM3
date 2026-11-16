@@ -1,0 +1,143 @@
+Serial port online.
+[TRACE] tick=12 event=TASK_STATE task=2 state=RUNNING
+[TRACE] tick=12 event=SWITCH from=1 to=2 reason=yield
+  [Task 1 / Worker Alpha] Executing step 1/3
+[TRACE] tick=13 event=TASK_STATE task=2 state=READY
+[TRACE] tick=13 event=TASK_STATE task=3 state=RUNNING
+[TRACE] tick=13 event=SWITCH from=2 to=3 reason=yield
+  [Task 2 / Worker Beta ] Executing step 1/3
+[TRACE] tick=14 event=TASK_STATE task=3 state=READY
+[TRACE] tick=14 event=TASK_STATE task=4 state=RUNNING
+[TRACE] tick=14 event=SWITCH from=3 to=4 reason=yield
+  [Task 3 / Worker Gamma] Executing step 1/3
+[TRACE] tick=15 event=TASK_STATE task=4 state=READY
+[TRACE] tick=15 event=SWITCH from=4 to=1 reason=yield
+[TRACE] tick=15 event=TASK_STATE task=2 state=RUNNING
+[TRACE] tick=15 event=SWITCH from=1 to=2 reason=yield
+  [Task 1 / Worker Alpha] Executing step 2/3
+[TRACE] tick=15 event=TASK_STATE task=2 state=READY
+[TRACE] tick=15 event=TASK_STATE task=3 state=RUNNING
+[TRACE] tick=15 event=SWITCH from=2 to=3 reason=yield
+  [Task 2 / Worker Beta ] Executing step 2/3
+[TRACE] tick=16 event=TASK_STATE task=3 state=READY
+[TRACE] tick=16 event=TASK_STATE task=4 state=RUNNING
+[TRACE] tick=16 event=SWITCH from=3 to=4 reason=yield
+  [Task 3 / Worker Gamma] Executing step 2/3
+[TRACE] tick=16 event=TASK_STATE task=4 state=READY
+[TRACE] tick=16 event=SWITCH from=4 to=1 reason=yield
+[TRACE] tick=16 event=TASK_STATE task=2 state=RUNNING
+[TRACE] tick=16 event=SWITCH from=1 to=2 reason=yield
+  [Task 1 / Worker Alpha] Executing step 3/3
+[TRACE] tick=17 event=TASK_STATE task=2 state=READY
+[TRACE] tick=17 event=TASK_STATE task=3 state=RUNNING
+[TRACE] tick=17 event=SWITCH from=2 to=3 reason=yield
+  [Task 2 / Worker Beta ] Executing step 3/3
+[TRACE] tick=18 event=TASK_STATE task=3 state=READY
+[TRACE] tick=18 event=TASK_STATE task=4 state=RUNNING
+[TRACE] tick=18 event=SWITCH from=3 to=4 reason=yield
+  [Task 3 / Worker Gamma] Executing step 3/3
+[TRACE] tick=18 event=TASK_STATE task=4 state=READY
+[TRACE] tick=18 event=SWITCH from=4 to=1 reason=yield
+[TRACE] tick=18 event=TASK_STATE task=2 state=RUNNING
+[TRACE] tick=18 event=SWITCH from=1 to=2 reason=yield
+  [Task 1 / Worker Alpha] Finished all steps. Exiting.
+[TRACE] tick=19 event=TASK_STATE task=2 state=TERMINATED
+[TRACE] tick=19 event=TASK_STATE task=3 state=RUNNING
+[TRACE] tick=19 event=SWITCH from=2 to=3 reason=terminate
+  [Task 2 / Worker Beta ] Finished all steps. Exiting.
+[TRACE] tick=19 event=TASK_STATE task=3 state=TERMINATED
+[TRACE] tick=19 event=TASK_STATE task=4 state=RUNNING
+[TRACE] tick=19 event=SWITCH from=3 to=4 reason=terminate
+  [Task 3 / Worker Gamma] Finished all steps. Exiting.
+[TRACE] tick=19 event=TASK_STATE task=4 state=TERMINATED
+[TRACE] tick=19 event=SWITCH from=4 to=1 reason=terminate
+[CA6-DEMO] 3-task round-robin completed successfully; reaped=3
+[CA6-PREEMPT] Enabling timer preemption; quantum=3 ticks
+[TRACE] tick=25 event=TASK_STATE task=6 state=RUNNING
+[TRACE] tick=25 event=SWITCH from=5 to=6 reason=yield
+  [Worker Alpha] Starting CPU-bound computation loop (NO voluntary yields)...
+[TRACE] tick=35 event=QUANTUM_EXPIRE task=6 consumed=3
+[TRACE] tick=35 event=TASK_STATE task=6 state=READY
+[TRACE] tick=35 event=TASK_STATE task=7 state=RUNNING
+[TRACE] tick=35 event=SWITCH from=6 to=7 reason=quantum
+  [Worker Beta ] Scheduled via PIT timer preemption!
+  [Worker Beta ] Validated Alpha computed 19 iterations while holding CPU.
+  [Worker Beta ] Signaling Alpha to terminate...
+  [Worker Beta ] Worker Beta exiting.
+[TRACE] tick=36 event=TASK_STATE task=7 state=TERMINATED
+[TRACE] tick=36 event=SWITCH from=7 to=5 reason=terminate
+[TRACE] tick=37 event=TASK_STATE task=6 state=RUNNING
+[TRACE] tick=37 event=SWITCH from=5 to=6 reason=yield
+  [Worker Alpha] Preempted successfully and received stop signal! Exiting.
+[TRACE] tick=37 event=TASK_STATE task=6 state=TERMINATED
+[TRACE] tick=37 event=SWITCH from=6 to=5 reason=terminate
+[CA6-DEMO] Preemptive scheduling completed successfully; alpha_count=19, reaped=2
+[CA6-SYNC] Part 1: Testing Spinlock mutual exclusion...
+[TRACE] tick=42 event=LOCK_ACQ task=5 lock=shared_sync_counter
+[TRACE] tick=43 event=LOCK_REL task=5 lock=shared_sync_counter
+[TRACE] tick=43 event=LOCK_ACQ task=5 lock=shared_sync_counter
+[TRACE] tick=43 event=LOCK_REL task=5 lock=shared_sync_counter
+[CA6-SYNC] Spinlock verified: acquisitions=2, contentions=0
+[CA6-SYNC] Part 2: Evaluating lock contention metrics...
+[TRACE] tick=45 event=TASK_STATE task=9 state=RUNNING
+[TRACE] tick=45 event=SWITCH from=8 to=9 reason=yield
+[TRACE] tick=45 event=LOCK_ACQ task=9 lock=contended_mutex
+[TRACE] tick=45 event=LOCK_REL task=9 lock=contended_mutex
+[TRACE] tick=45 event=LOCK_ACQ task=9 lock=contended_mutex
+[TRACE] tick=45 event=LOCK_REL task=9 lock=contended_mutex
+[TRACE] tick=45 event=LOCK_ACQ task=9 lock=contended_mutex
+[TRACE] tick=45 event=LOCK_REL task=9 lock=contended_mutex
+[TRACE] tick=45 event=LOCK_ACQ task=9 lock=contended_mutex
+[TRACE] tick=45 event=LOCK_REL task=9 lock=contended_mutex
+[TRACE] tick=45 event=LOCK_ACQ task=9 lock=contended_mutex
+[TRACE] tick=45 event=LOCK_REL task=9 lock=contended_mutex
+[TRACE] tick=45 event=LOCK_ACQ task=9 lock=contended_mutex
+[TRACE] tick=45 event=LOCK_REL task=9 lock=contended_mutex
+[TRACE] tick=45 event=LOCK_ACQ task=9 lock=contended_mutex
+[TRACE] tick=46 event=LOCK_REL task=9 lock=contended_mutex
+[TRACE] tick=46 event=LOCK_ACQ task=9 lock=contended_mutex
+[TRACE] tick=46 event=LOCK_REL task=9 lock=contended_mutex
+[TRACE] tick=46 event=LOCK_ACQ task=9 lock=contended_mutex
+[TRACE] tick=46 event=LOCK_REL task=9 lock=contended_mutex
+[TRACE] tick=46 event=LOCK_ACQ task=9 lock=contended_mutex
+[TRACE] tick=46 event=LOCK_REL task=9 lock=contended_mutex
+[TRACE] tick=46 event=TASK_STATE task=9 state=TERMINATED
+[TRACE] tick=46 event=TASK_STATE task=10 state=RUNNING
+[TRACE] tick=46 event=SWITCH from=9 to=10 reason=terminate
+[TRACE] tick=46 event=LOCK_ACQ task=10 lock=contended_mutex
+[TRACE] tick=46 event=LOCK_REL task=10 lock=contended_mutex
+[TRACE] tick=46 event=LOCK_ACQ task=10 lock=contended_mutex
+[TRACE] tick=46 event=LOCK_REL task=10 lock=contended_mutex
+[TRACE] tick=46 event=LOCK_ACQ task=10 lock=contended_mutex
+[TRACE] tick=46 event=LOCK_REL task=10 lock=contended_mutex
+[TRACE] tick=46 event=LOCK_ACQ task=10 lock=contended_mutex
+[TRACE] tick=46 event=LOCK_REL task=10 lock=contended_mutex
+[TRACE] tick=47 event=LOCK_ACQ task=10 lock=contended_mutex
+[TRACE] tick=47 event=LOCK_REL task=10 lock=contended_mutex
+[TRACE] tick=47 event=LOCK_ACQ task=10 lock=contended_mutex
+[TRACE] tick=47 event=LOCK_REL task=10 lock=contended_mutex
+[TRACE] tick=47 event=LOCK_ACQ task=10 lock=contended_mutex
+[TRACE] tick=47 event=LOCK_REL task=10 lock=contended_mutex
+[TRACE] tick=47 event=LOCK_ACQ task=10 lock=contended_mutex
+[TRACE] tick=47 event=LOCK_REL task=10 lock=contended_mutex
+[TRACE] tick=47 event=LOCK_ACQ task=10 lock=contended_mutex
+[TRACE] tick=47 event=LOCK_REL task=10 lock=contended_mutex
+[TRACE] tick=47 event=LOCK_ACQ task=10 lock=contended_mutex
+[TRACE] tick=47 event=LOCK_REL task=10 lock=contended_mutex
+[TRACE] tick=47 event=TASK_STATE task=10 state=TERMINATED
+[TRACE] tick=47 event=SWITCH from=10 to=8 reason=terminate
+[TRACE] tick=47 event=LOCK_ACQ task=8 lock=contended_mutex
+[TRACE] tick=47 event=LOCK_REL task=8 lock=contended_mutex
+[CA6-SYNC] Contention metrics: acq=20, cont=0, spins=0, max_spins=0, hold_ticks=2
+[CA6-SYNC] Part 3: Demonstrating lock ranking hierarchy...
+[TRACE] tick=53 event=LOCK_ACQ task=8 lock=driver_lock
+[TRACE] tick=53 event=LOCK_ACQ task=8 lock=vfs_lock
+[TRACE] tick=54 event=LOCK_REL task=8 lock=vfs_lock
+[TRACE] tick=54 event=LOCK_REL task=8 lock=driver_lock
+[TRACE] tick=55 event=LOCK_ACQ task=8 lock=vfs_lock
+[TRACE] tick=57 event=DEADLOCK_PREVENT task=8 req_rank=10 held_rank=20
+[CA6-DEADLOCK] Out-of-order acquisition prevented: Lock ranking violation: requested rank 10 <= held rank 20 (deadlock prevented)
+[TRACE] tick=58 event=LOCK_REL task=8 lock=vfs_lock
+[CA6-DEMO] Synchronization & Track C validation completed successfully.
+BOOT_TIME_MS=665.673 (TSC ticks=1659046529, freq=2492 MHz)
+micro_os:/> 

@@ -1,0 +1,637 @@
+Serial port online.
+==================================================
+   CA-6 Rust Micro-OS Core Architecture Demo
+==================================================
+Specification: CA-6 Flagship Engineering Project (15 Marks)
+Specialization Track: Track C - Concurrency Engineering
+--------------------------------------------------
+Core Subsystem Verification (Layers 1-10):
+  Layer 1 Boot:                 OK (x86_64 Long Mode, GDT, IDT, 4-level Paging)
+  Layer 2 Diagnostics:          OK (Dual-channel VGA + UART 115200 serial tracing)
+  Layer 3 Task Representation:  OK (KThread, CpuContext, 16 KiB heap stack, canary guard)
+  Layer 4 Ready Queue:          OK (FIFO ReadyQueue, enqueue/dequeue/peek/remove)
+  Layer 5 Round Robin Sched:    OK (Assembly switch_context, yield_now, thread reaping)
+  Layer 6 Preemption Trigger:   OK (PIT 8253 IRQ0 @ 100 Hz, quantum depletion)
+  Layer 7 Synchronization:      OK (Hand-written Spinlock with CAS metrics + RankedLock)
+  Layer 8 Memory Allocator:     OK (Intrusive Linked List + Bump comparative benchmark)
+  Layer 9 User / Demo Mode:     OK (In-kernel Shell CLI & isolated ca6-core boot mode)
+  Layer 10 Automated Test Suite: OK (Live runtime execution of TC1 through TC6)
+--------------------------------------------------
+------------------------------------------------------------------------
+             CA-6 Core Test Suite Execution (TC1 - TC6)
+------------------------------------------------------------------------
+[TRACE] tick=60 event=TASK_STATE task=3 state=RUNNING
+[TRACE] tick=61 event=TASK_STATE task=3 state=READY
+[TRACE] tick=62 event=TASK_STATE task=4 state=RUNNING
+[TRACE] tick=63 event=TASK_STATE task=4 state=READY
+[TRACE] tick=64 event=TASK_STATE task=5 state=RUNNING
+[TRACE] tick=65 event=TASK_STATE task=5 state=READY
+[TRACE] tick=66 event=TASK_STATE task=6 state=RUNNING
+[TRACE] tick=68 event=TASK_STATE task=6 state=READY
+[TRACE] tick=69 event=TASK_STATE task=7 state=RUNNING
+[TRACE] tick=70 event=TASK_STATE task=7 state=READY
+[TRACE] tick=72 event=TASK_STATE task=9 state=RUNNING
+[TRACE] tick=73 event=TASK_STATE task=9 state=TERMINATED
+[TRACE] tick=74 event=TASK_STATE task=10 state=RUNNING
+[TRACE] tick=75 event=TASK_STATE task=10 state=TERMINATED
+[TRACE] tick=76 event=TASK_STATE task=11 state=RUNNING
+[TRACE] tick=77 event=TASK_STATE task=11 state=TERMINATED
+[TRACE] tick=78 event=TASK_STATE task=12 state=RUNNING
+[TRACE] tick=79 event=TASK_STATE task=12 state=TERMINATED
+[TRACE] tick=80 event=TASK_STATE task=13 state=RUNNING
+[TRACE] tick=81 event=TASK_STATE task=13 state=TERMINATED
+[TRACE] tick=83 event=TASK_STATE task=14 state=RUNNING
+[TRACE] tick=84 event=TASK_STATE task=14 state=TERMINATED
+[TRACE] tick=85 event=TASK_STATE task=15 state=RUNNING
+[TRACE] tick=86 event=TASK_STATE task=15 state=TERMINATED
+[TRACE] tick=88 event=TASK_STATE task=16 state=RUNNING
+[TRACE] tick=89 event=TASK_STATE task=16 state=TERMINATED
+[TRACE] tick=90 event=TASK_STATE task=17 state=RUNNING
+[TRACE] tick=91 event=TASK_STATE task=17 state=TERMINATED
+[TRACE] tick=92 event=TASK_STATE task=18 state=RUNNING
+[TRACE] tick=93 event=TASK_STATE task=18 state=TERMINATED
+[TRACE] tick=95 event=TASK_STATE task=19 state=RUNNING
+[TRACE] tick=97 event=TASK_STATE task=19 state=TERMINATED
+[TRACE] tick=98 event=TASK_STATE task=20 state=RUNNING
+[TRACE] tick=99 event=TASK_STATE task=20 state=TERMINATED
+[TRACE] tick=100 event=TASK_STATE task=21 state=RUNNING
+[TRACE] tick=101 event=TASK_STATE task=21 state=TERMINATED
+[TRACE] tick=102 event=TASK_STATE task=22 state=RUNNING
+[TRACE] tick=103 event=TASK_STATE task=22 state=TERMINATED
+[TRACE] tick=104 event=TASK_STATE task=23 state=RUNNING
+[TRACE] tick=105 event=TASK_STATE task=23 state=TERMINATED
+[TRACE] tick=106 event=TASK_STATE task=24 state=RUNNING
+[TRACE] tick=107 event=TASK_STATE task=24 state=TERMINATED
+[TRACE] tick=108 event=TASK_STATE task=25 state=RUNNING
+[TRACE] tick=110 event=TASK_STATE task=25 state=TERMINATED
+[TRACE] tick=111 event=TASK_STATE task=26 state=RUNNING
+[TRACE] tick=112 event=TASK_STATE task=26 state=TERMINATED
+[TRACE] tick=113 event=TASK_STATE task=27 state=RUNNING
+[TRACE] tick=114 event=TASK_STATE task=27 state=TERMINATED
+[TRACE] tick=115 event=TASK_STATE task=28 state=RUNNING
+[TRACE] tick=116 event=TASK_STATE task=28 state=TERMINATED
+[TRACE] tick=118 event=TASK_STATE task=29 state=RUNNING
+[TRACE] tick=119 event=TASK_STATE task=29 state=TERMINATED
+[TRACE] tick=120 event=TASK_STATE task=30 state=RUNNING
+[TRACE] tick=121 event=TASK_STATE task=30 state=TERMINATED
+[TRACE] tick=122 event=TASK_STATE task=31 state=RUNNING
+[TRACE] tick=123 event=TASK_STATE task=31 state=TERMINATED
+[TRACE] tick=124 event=TASK_STATE task=32 state=RUNNING
+[TRACE] tick=125 event=TASK_STATE task=32 state=TERMINATED
+[TRACE] tick=126 event=TASK_STATE task=33 state=RUNNING
+[TRACE] tick=127 event=TASK_STATE task=33 state=TERMINATED
+[TRACE] tick=128 event=TASK_STATE task=34 state=RUNNING
+[TRACE] tick=129 event=TASK_STATE task=34 state=TERMINATED
+[TRACE] tick=130 event=TASK_STATE task=35 state=RUNNING
+[TRACE] tick=131 event=TASK_STATE task=35 state=TERMINATED
+[TRACE] tick=132 event=TASK_STATE task=36 state=RUNNING
+[TRACE] tick=133 event=TASK_STATE task=36 state=TERMINATED
+[TRACE] tick=134 event=TASK_STATE task=37 state=RUNNING
+[TRACE] tick=135 event=TASK_STATE task=37 state=TERMINATED
+[TRACE] tick=136 event=TASK_STATE task=38 state=RUNNING
+[TRACE] tick=137 event=TASK_STATE task=38 state=TERMINATED
+[TRACE] tick=138 event=TASK_STATE task=39 state=RUNNING
+[TRACE] tick=139 event=TASK_STATE task=39 state=TERMINATED
+[TRACE] tick=140 event=TASK_STATE task=40 state=RUNNING
+[TRACE] tick=141 event=TASK_STATE task=40 state=TERMINATED
+[TRACE] tick=142 event=TASK_STATE task=41 state=RUNNING
+[TRACE] tick=143 event=TASK_STATE task=41 state=TERMINATED
+[TRACE] tick=144 event=TASK_STATE task=42 state=RUNNING
+[TRACE] tick=145 event=TASK_STATE task=42 state=TERMINATED
+[TRACE] tick=146 event=TASK_STATE task=43 state=RUNNING
+[TRACE] tick=147 event=TASK_STATE task=43 state=TERMINATED
+[TRACE] tick=148 event=TASK_STATE task=44 state=RUNNING
+[TRACE] tick=149 event=TASK_STATE task=44 state=TERMINATED
+[TRACE] tick=150 event=TASK_STATE task=45 state=RUNNING
+[TRACE] tick=151 event=TASK_STATE task=45 state=TERMINATED
+[TRACE] tick=152 event=TASK_STATE task=46 state=RUNNING
+[TRACE] tick=153 event=TASK_STATE task=46 state=TERMINATED
+[TRACE] tick=154 event=TASK_STATE task=47 state=RUNNING
+[TRACE] tick=155 event=TASK_STATE task=47 state=TERMINATED
+[TRACE] tick=156 event=TASK_STATE task=48 state=RUNNING
+[TRACE] tick=157 event=TASK_STATE task=48 state=TERMINATED
+[TRACE] tick=158 event=TASK_STATE task=49 state=RUNNING
+[TRACE] tick=159 event=TASK_STATE task=49 state=TERMINATED
+[TRACE] tick=160 event=TASK_STATE task=50 state=RUNNING
+[TRACE] tick=161 event=TASK_STATE task=50 state=TERMINATED
+[TRACE] tick=163 event=TASK_STATE task=51 state=RUNNING
+[TRACE] tick=164 event=TASK_STATE task=51 state=TERMINATED
+[TRACE] tick=165 event=TASK_STATE task=52 state=RUNNING
+[TRACE] tick=166 event=TASK_STATE task=52 state=TERMINATED
+[TRACE] tick=167 event=TASK_STATE task=53 state=RUNNING
+[TRACE] tick=168 event=TASK_STATE task=53 state=TERMINATED
+[TRACE] tick=169 event=TASK_STATE task=54 state=RUNNING
+[TRACE] tick=170 event=TASK_STATE task=54 state=TERMINATED
+[TRACE] tick=171 event=TASK_STATE task=55 state=RUNNING
+[TRACE] tick=172 event=TASK_STATE task=55 state=TERMINATED
+[TRACE] tick=173 event=TASK_STATE task=56 state=RUNNING
+[TRACE] tick=174 event=TASK_STATE task=56 state=TERMINATED
+[TRACE] tick=176 event=TASK_STATE task=57 state=RUNNING
+[TRACE] tick=178 event=TASK_STATE task=57 state=TERMINATED
+[TRACE] tick=179 event=TASK_STATE task=58 state=RUNNING
+[TRACE] tick=181 event=TASK_STATE task=58 state=TERMINATED
+[TRACE] tick=182 event=TASK_STATE task=59 state=RUNNING
+[TRACE] tick=183 event=TASK_STATE task=59 state=TERMINATED
+[TRACE] tick=185 event=TASK_STATE task=61 state=RUNNING
+[TRACE] tick=186 event=TASK_STATE task=61 state=TERMINATED
+[TRACE] tick=187 event=TASK_STATE task=62 state=RUNNING
+[TRACE] tick=188 event=TASK_STATE task=62 state=TERMINATED
+[TRACE] tick=190 event=TASK_STATE task=63 state=RUNNING
+[TRACE] tick=191 event=TASK_STATE task=63 state=TERMINATED
+[TRACE] tick=192 event=TASK_STATE task=64 state=RUNNING
+[TRACE] tick=193 event=TASK_STATE task=64 state=TERMINATED
+[TRACE] tick=194 event=TASK_STATE task=65 state=RUNNING
+[TRACE] tick=195 event=TASK_STATE task=65 state=TERMINATED
+[TRACE] tick=196 event=TASK_STATE task=66 state=RUNNING
+[TRACE] tick=197 event=TASK_STATE task=66 state=TERMINATED
+[TRACE] tick=198 event=TASK_STATE task=67 state=RUNNING
+[TRACE] tick=199 event=TASK_STATE task=67 state=TERMINATED
+[TRACE] tick=200 event=TASK_STATE task=68 state=RUNNING
+[TRACE] tick=202 event=TASK_STATE task=68 state=TERMINATED
+[TRACE] tick=203 event=TASK_STATE task=69 state=RUNNING
+[TRACE] tick=204 event=TASK_STATE task=69 state=TERMINATED
+[TRACE] tick=205 event=TASK_STATE task=70 state=RUNNING
+[TRACE] tick=206 event=TASK_STATE task=70 state=TERMINATED
+[TRACE] tick=207 event=TASK_STATE task=71 state=RUNNING
+[TRACE] tick=208 event=TASK_STATE task=71 state=TERMINATED
+[TRACE] tick=209 event=TASK_STATE task=72 state=RUNNING
+[TRACE] tick=210 event=TASK_STATE task=72 state=TERMINATED
+[TRACE] tick=211 event=TASK_STATE task=73 state=RUNNING
+[TRACE] tick=212 event=TASK_STATE task=73 state=TERMINATED
+[TRACE] tick=213 event=TASK_STATE task=74 state=RUNNING
+[TRACE] tick=214 event=TASK_STATE task=74 state=TERMINATED
+[TRACE] tick=215 event=TASK_STATE task=75 state=RUNNING
+[TRACE] tick=216 event=TASK_STATE task=75 state=TERMINATED
+[TRACE] tick=217 event=TASK_STATE task=76 state=RUNNING
+[TRACE] tick=218 event=TASK_STATE task=76 state=TERMINATED
+[TRACE] tick=220 event=TASK_STATE task=77 state=RUNNING
+[TRACE] tick=221 event=TASK_STATE task=77 state=TERMINATED
+[TRACE] tick=222 event=TASK_STATE task=78 state=RUNNING
+[TRACE] tick=223 event=TASK_STATE task=78 state=TERMINATED
+[TRACE] tick=224 event=TASK_STATE task=79 state=RUNNING
+[TRACE] tick=225 event=TASK_STATE task=79 state=TERMINATED
+[TRACE] tick=226 event=TASK_STATE task=80 state=RUNNING
+[TRACE] tick=227 event=TASK_STATE task=80 state=TERMINATED
++------+-------------------------------------------+--------+
+| Test | Description                               | Result |
++------+-------------------------------------------+--------+
+| TC1  | Two Tasks Representation & Stack Isolation |  PASS  |
+| TC2  | 3 to 5 Tasks Lifecycle & Queue Rotation   |  PASS  |
+| TC3  | Boundary Cases (Queue Limits & Canary)    |  PASS  |
+| TC4  | Stress Workload (50 Tasks Queue/Dequeue)  |  PASS  |
+| TC5  | Controlled Failure (State & Overflows)    |  PASS  |
+| TC6  | Repeatability Invariant (10x Cycles)      |  PASS  |
++------+-------------------------------------------+--------+
+[CA6-TC] Result: 6/6 test cases passed (100% compliance).
+------------------------------------------------------------------------
+[TRACE] tick=259 event=TASK_STATE task=82 state=RUNNING
+[TRACE] tick=259 event=SWITCH from=81 to=82 reason=yield
+  [Task 1 / Worker Alpha] Executing step 1/3
+[TRACE] tick=262 event=TASK_STATE task=82 state=READY
+[TRACE] tick=262 event=TASK_STATE task=83 state=RUNNING
+[TRACE] tick=262 event=SWITCH from=82 to=83 reason=yield
+  [Task 2 / Worker Beta ] Executing step 1/3
+[TRACE] tick=266 event=TASK_STATE task=83 state=READY
+[TRACE] tick=266 event=TASK_STATE task=84 state=RUNNING
+[TRACE] tick=266 event=SWITCH from=83 to=84 reason=yield
+  [Task 3 / Worker Gamma] Executing step 1/3
+[TRACE] tick=269 event=TASK_STATE task=84 state=READY
+[TRACE] tick=269 event=SWITCH from=84 to=81 reason=yield
+[TRACE] tick=270 event=TASK_STATE task=82 state=RUNNING
+[TRACE] tick=270 event=SWITCH from=81 to=82 reason=yield
+  [Task 1 / Worker Alpha] Executing step 2/3
+[TRACE] tick=273 event=TASK_STATE task=82 state=READY
+[TRACE] tick=273 event=TASK_STATE task=83 state=RUNNING
+[TRACE] tick=273 event=SWITCH from=82 to=83 reason=yield
+  [Task 2 / Worker Beta ] Executing step 2/3
+[TRACE] tick=276 event=TASK_STATE task=83 state=READY
+[TRACE] tick=276 event=TASK_STATE task=84 state=RUNNING
+[TRACE] tick=276 event=SWITCH from=83 to=84 reason=yield
+  [Task 3 / Worker Gamma] Executing step 2/3
+[TRACE] tick=279 event=TASK_STATE task=84 state=READY
+[TRACE] tick=279 event=SWITCH from=84 to=81 reason=yield
+[TRACE] tick=280 event=TASK_STATE task=82 state=RUNNING
+[TRACE] tick=280 event=SWITCH from=81 to=82 reason=yield
+  [Task 1 / Worker Alpha] Executing step 3/3
+[TRACE] tick=283 event=TASK_STATE task=82 state=READY
+[TRACE] tick=283 event=TASK_STATE task=83 state=RUNNING
+[TRACE] tick=283 event=SWITCH from=82 to=83 reason=yield
+  [Task 2 / Worker Beta ] Executing step 3/3
+[TRACE] tick=286 event=TASK_STATE task=83 state=READY
+[TRACE] tick=286 event=TASK_STATE task=84 state=RUNNING
+[TRACE] tick=286 event=SWITCH from=83 to=84 reason=yield
+  [Task 3 / Worker Gamma] Executing step 3/3
+[TRACE] tick=290 event=TASK_STATE task=84 state=READY
+[TRACE] tick=290 event=SWITCH from=84 to=81 reason=yield
+[TRACE] tick=291 event=TASK_STATE task=82 state=RUNNING
+[TRACE] tick=291 event=SWITCH from=81 to=82 reason=yield
+  [Task 1 / Worker Alpha] Finished all steps. Exiting.
+[TRACE] tick=294 event=TASK_STATE task=82 state=TERMINATED
+[TRACE] tick=294 event=TASK_STATE task=83 state=RUNNING
+[TRACE] tick=294 event=SWITCH from=82 to=83 reason=terminate
+  [Task 2 / Worker Beta ] Finished all steps. Exiting.
+[TRACE] tick=297 event=TASK_STATE task=83 state=TERMINATED
+[TRACE] tick=297 event=TASK_STATE task=84 state=RUNNING
+[TRACE] tick=297 event=SWITCH from=83 to=84 reason=terminate
+  [Task 3 / Worker Gamma] Finished all steps. Exiting.
+[TRACE] tick=300 event=TASK_STATE task=84 state=TERMINATED
+[TRACE] tick=300 event=SWITCH from=84 to=81 reason=terminate
+[CA6-DEMO] 3-task round-robin completed successfully; reaped=3
+[CA6-PREEMPT] Enabling timer preemption; quantum=3 ticks
+[TRACE] tick=315 event=TASK_STATE task=86 state=RUNNING
+[TRACE] tick=315 event=SWITCH from=85 to=86 reason=yield
+  [Worker Alpha] Starting CPU-bound computation loop (NO voluntary yields)...
+[TRACE] tick=325 event=QUANTUM_EXPIRE task=86 consumed=3
+[TRACE] tick=325 event=TASK_STATE task=86 state=READY
+[TRACE] tick=325 event=TASK_STATE task=87 state=RUNNING
+[TRACE] tick=325 event=SWITCH from=86 to=87 reason=quantum
+  [Worker Beta ] Scheduled via PIT timer preemption!
+  [Worker Beta ] Validated Alpha computed 4 iterations while holding CPU.
+  [Worker Beta ] Signaling Alpha to terminate...
+  [Worker Beta ] Worker Beta exiting.
+[TRACE] tick=333 event=TASK_STATE task=87 state=TERMINATED
+[TRACE] tick=333 event=SWITCH from=87 to=85 reason=terminate
+[TRACE] tick=334 event=TASK_STATE task=86 state=RUNNING
+[TRACE] tick=334 event=SWITCH from=85 to=86 reason=yield
+  [Worker Alpha] Preempted successfully and received stop signal! Exiting.
+[TRACE] tick=337 event=QUANTUM_EXPIRE task=86 consumed=3
+[TRACE] tick=337 event=TASK_STATE task=86 state=READY
+[TRACE] tick=337 event=SWITCH from=86 to=85 reason=quantum
+[TRACE] tick=338 event=TASK_STATE task=86 state=RUNNING
+[TRACE] tick=338 event=SWITCH from=85 to=86 reason=yield
+[TRACE] tick=339 event=TASK_STATE task=86 state=TERMINATED
+[TRACE] tick=339 event=SWITCH from=86 to=85 reason=terminate
+[CA6-DEMO] Preemptive scheduling completed successfully; alpha_count=4, reaped=2
+[CA6-SYNC] Part 1: Testing Spinlock mutual exclusion...
+[TRACE] tick=354 event=LOCK_ACQ task=85 lock=shared_sync_counter
+[TRACE] tick=357 event=LOCK_REL task=85 lock=shared_sync_counter
+[TRACE] tick=359 event=LOCK_ACQ task=85 lock=shared_sync_counter
+[TRACE] tick=361 event=LOCK_REL task=85 lock=shared_sync_counter
+[CA6-SYNC] Spinlock verified: acquisitions=2, contentions=0
+[CA6-SYNC] Part 2: Evaluating lock contention metrics...
+[TRACE] tick=367 event=TASK_STATE task=89 state=RUNNING
+[TRACE] tick=367 event=SWITCH from=88 to=89 reason=yield
+[TRACE] tick=368 event=LOCK_ACQ task=89 lock=contended_mutex
+[TRACE] tick=370 event=LOCK_REL task=89 lock=contended_mutex
+[TRACE] tick=371 event=LOCK_ACQ task=89 lock=contended_mutex
+[TRACE] tick=372 event=LOCK_REL task=89 lock=contended_mutex
+[TRACE] tick=373 event=LOCK_ACQ task=89 lock=contended_mutex
+[TRACE] tick=374 event=LOCK_REL task=89 lock=contended_mutex
+[TRACE] tick=375 event=LOCK_ACQ task=89 lock=contended_mutex
+[TRACE] tick=376 event=LOCK_REL task=89 lock=contended_mutex
+[TRACE] tick=377 event=LOCK_ACQ task=89 lock=contended_mutex
+[TRACE] tick=378 event=LOCK_REL task=89 lock=contended_mutex
+[TRACE] tick=379 event=LOCK_ACQ task=89 lock=contended_mutex
+[TRACE] tick=380 event=LOCK_REL task=89 lock=contended_mutex
+[TRACE] tick=382 event=LOCK_ACQ task=89 lock=contended_mutex
+[TRACE] tick=383 event=LOCK_REL task=89 lock=contended_mutex
+[TRACE] tick=384 event=LOCK_ACQ task=89 lock=contended_mutex
+[TRACE] tick=386 event=LOCK_REL task=89 lock=contended_mutex
+[TRACE] tick=387 event=LOCK_ACQ task=89 lock=contended_mutex
+[TRACE] tick=388 event=LOCK_REL task=89 lock=contended_mutex
+[TRACE] tick=390 event=LOCK_ACQ task=89 lock=contended_mutex
+[TRACE] tick=391 event=LOCK_REL task=89 lock=contended_mutex
+[TRACE] tick=393 event=TASK_STATE task=89 state=TERMINATED
+[TRACE] tick=393 event=TASK_STATE task=90 state=RUNNING
+[TRACE] tick=393 event=SWITCH from=89 to=90 reason=terminate
+[TRACE] tick=394 event=LOCK_ACQ task=90 lock=contended_mutex
+[TRACE] tick=396 event=LOCK_REL task=90 lock=contended_mutex
+[TRACE] tick=397 event=LOCK_ACQ task=90 lock=contended_mutex
+[TRACE] tick=398 event=LOCK_REL task=90 lock=contended_mutex
+[TRACE] tick=399 event=LOCK_ACQ task=90 lock=contended_mutex
+[TRACE] tick=400 event=LOCK_REL task=90 lock=contended_mutex
+[TRACE] tick=401 event=LOCK_ACQ task=90 lock=contended_mutex
+[TRACE] tick=402 event=LOCK_REL task=90 lock=contended_mutex
+[TRACE] tick=403 event=LOCK_ACQ task=90 lock=contended_mutex
+[TRACE] tick=404 event=LOCK_REL task=90 lock=contended_mutex
+[TRACE] tick=405 event=LOCK_ACQ task=90 lock=contended_mutex
+[TRACE] tick=406 event=LOCK_REL task=90 lock=contended_mutex
+[TRACE] tick=407 event=LOCK_ACQ task=90 lock=contended_mutex
+[TRACE] tick=408 event=LOCK_REL task=90 lock=contended_mutex
+[TRACE] tick=409 event=LOCK_ACQ task=90 lock=contended_mutex
+[TRACE] tick=411 event=LOCK_REL task=90 lock=contended_mutex
+[TRACE] tick=412 event=LOCK_ACQ task=90 lock=contended_mutex
+[TRACE] tick=413 event=LOCK_REL task=90 lock=contended_mutex
+[TRACE] tick=414 event=LOCK_ACQ task=90 lock=contended_mutex
+[TRACE] tick=415 event=LOCK_REL task=90 lock=contended_mutex
+[TRACE] tick=416 event=TASK_STATE task=90 state=TERMINATED
+[TRACE] tick=416 event=SWITCH from=90 to=88 reason=terminate
+[TRACE] tick=417 event=LOCK_ACQ task=88 lock=contended_mutex
+[TRACE] tick=418 event=LOCK_REL task=88 lock=contended_mutex
+[CA6-SYNC] Contention metrics: acq=20, cont=0, spins=0, max_spins=0, hold_ticks=25
+[CA6-SYNC] Part 3: Demonstrating lock ranking hierarchy...
+[TRACE] tick=432 event=LOCK_ACQ task=88 lock=driver_lock
+[TRACE] tick=434 event=LOCK_ACQ task=88 lock=vfs_lock
+[TRACE] tick=437 event=LOCK_REL task=88 lock=vfs_lock
+[TRACE] tick=438 event=LOCK_REL task=88 lock=driver_lock
+[TRACE] tick=440 event=LOCK_ACQ task=88 lock=vfs_lock
+[TRACE] tick=443 event=DEADLOCK_PREVENT task=88 req_rank=10 held_rank=20
+[CA6-DEADLOCK] Out-of-order acquisition prevented: Lock ranking violation: requested rank 10 <= held rank 20 (deadlock prevented)
+[TRACE] tick=446 event=LOCK_REL task=88 lock=vfs_lock
+[CA6-DEMO] Synchronization & Track C validation completed successfully.
+[TRACE] tick=461 event=ALLOC size=32 ok=1
+[TRACE] tick=462 event=ALLOC size=64 ok=1
+[TRACE] tick=463 event=ALLOC size=128 ok=1
+[TRACE] tick=464 event=ALLOC size=256 ok=1
+[TRACE] tick=465 event=ALLOC size=512 ok=1
+[TRACE] tick=466 event=ALLOC size=32 ok=1
+[TRACE] tick=467 event=ALLOC size=64 ok=1
+[TRACE] tick=468 event=ALLOC size=128 ok=1
+[TRACE] tick=469 event=ALLOC size=256 ok=1
+[TRACE] tick=470 event=ALLOC size=512 ok=1
+[TRACE] tick=471 event=ALLOC size=32 ok=1
+[TRACE] tick=472 event=ALLOC size=64 ok=1
+[TRACE] tick=473 event=ALLOC size=128 ok=1
+[TRACE] tick=474 event=ALLOC size=256 ok=1
+[TRACE] tick=475 event=ALLOC size=512 ok=1
+[TRACE] tick=476 event=ALLOC size=32 ok=1
+[TRACE] tick=477 event=ALLOC size=64 ok=1
+[TRACE] tick=478 event=ALLOC size=128 ok=1
+[TRACE] tick=479 event=ALLOC size=256 ok=1
+[TRACE] tick=480 event=ALLOC size=512 ok=1
+[TRACE] tick=481 event=ALLOC size=32 ok=1
+[TRACE] tick=482 event=ALLOC size=64 ok=1
+[TRACE] tick=483 event=ALLOC size=128 ok=1
+[TRACE] tick=484 event=ALLOC size=256 ok=1
+[TRACE] tick=485 event=ALLOC size=512 ok=1
+[TRACE] tick=486 event=ALLOC size=32 ok=1
+[TRACE] tick=487 event=ALLOC size=64 ok=1
+[TRACE] tick=488 event=ALLOC size=128 ok=1
+[TRACE] tick=489 event=ALLOC size=256 ok=1
+[TRACE] tick=491 event=ALLOC size=512 ok=1
+[TRACE] tick=492 event=ALLOC size=32 ok=1
+[TRACE] tick=493 event=ALLOC size=64 ok=1
+[TRACE] tick=495 event=ALLOC size=128 ok=1
+[TRACE] tick=496 event=ALLOC size=256 ok=1
+[TRACE] tick=497 event=ALLOC size=512 ok=1
+[TRACE] tick=498 event=ALLOC size=32 ok=1
+[TRACE] tick=499 event=ALLOC size=64 ok=1
+[TRACE] tick=500 event=ALLOC size=128 ok=1
+[TRACE] tick=501 event=ALLOC size=256 ok=1
+[TRACE] tick=502 event=ALLOC size=512 ok=1
+[TRACE] tick=503 event=ALLOC size=32 ok=1
+[TRACE] tick=505 event=ALLOC size=64 ok=1
+[TRACE] tick=506 event=ALLOC size=128 ok=1
+[TRACE] tick=507 event=ALLOC size=256 ok=1
+[TRACE] tick=508 event=ALLOC size=512 ok=1
+[TRACE] tick=509 event=ALLOC size=32 ok=1
+[TRACE] tick=510 event=ALLOC size=64 ok=1
+[TRACE] tick=511 event=ALLOC size=128 ok=1
+[TRACE] tick=512 event=ALLOC size=256 ok=1
+[TRACE] tick=513 event=ALLOC size=512 ok=1
+[TRACE] tick=514 event=ALLOC size=32 ok=1
+[TRACE] tick=515 event=ALLOC size=64 ok=1
+[TRACE] tick=516 event=ALLOC size=128 ok=1
+[TRACE] tick=517 event=ALLOC size=256 ok=1
+[TRACE] tick=518 event=ALLOC size=512 ok=1
+[TRACE] tick=519 event=ALLOC size=32 ok=1
+[TRACE] tick=520 event=ALLOC size=64 ok=1
+[TRACE] tick=521 event=ALLOC size=128 ok=1
+[TRACE] tick=522 event=ALLOC size=256 ok=1
+[TRACE] tick=523 event=ALLOC size=512 ok=1
+[TRACE] tick=524 event=ALLOC size=32 ok=1
+[TRACE] tick=525 event=ALLOC size=64 ok=1
+[TRACE] tick=526 event=ALLOC size=128 ok=1
+[TRACE] tick=527 event=ALLOC size=256 ok=1
+[TRACE] tick=528 event=ALLOC size=512 ok=1
+[TRACE] tick=529 event=ALLOC size=32 ok=1
+[TRACE] tick=530 event=ALLOC size=64 ok=1
+[TRACE] tick=531 event=ALLOC size=128 ok=1
+[TRACE] tick=532 event=ALLOC size=256 ok=1
+[TRACE] tick=533 event=ALLOC size=512 ok=1
+[TRACE] tick=534 event=ALLOC size=32 ok=1
+[TRACE] tick=535 event=ALLOC size=64 ok=1
+[TRACE] tick=536 event=ALLOC size=128 ok=1
+[TRACE] tick=537 event=ALLOC size=256 ok=1
+[TRACE] tick=538 event=ALLOC size=512 ok=1
+[TRACE] tick=539 event=ALLOC size=32 ok=1
+[TRACE] tick=540 event=ALLOC size=64 ok=1
+[TRACE] tick=541 event=ALLOC size=128 ok=1
+[TRACE] tick=542 event=ALLOC size=256 ok=1
+[TRACE] tick=543 event=ALLOC size=512 ok=1
+[TRACE] tick=544 event=ALLOC size=32 ok=1
+[TRACE] tick=545 event=ALLOC size=64 ok=1
+[TRACE] tick=546 event=ALLOC size=128 ok=1
+[TRACE] tick=547 event=ALLOC size=256 ok=1
+[TRACE] tick=548 event=ALLOC size=512 ok=1
+[TRACE] tick=549 event=ALLOC size=32 ok=1
+[TRACE] tick=550 event=ALLOC size=64 ok=1
+[TRACE] tick=551 event=ALLOC size=128 ok=1
+[TRACE] tick=552 event=ALLOC size=256 ok=1
+[TRACE] tick=553 event=ALLOC size=512 ok=1
+[TRACE] tick=554 event=ALLOC size=32 ok=1
+[TRACE] tick=555 event=ALLOC size=64 ok=1
+[TRACE] tick=556 event=ALLOC size=128 ok=1
+[TRACE] tick=557 event=ALLOC size=256 ok=1
+[TRACE] tick=558 event=ALLOC size=512 ok=1
+[TRACE] tick=559 event=ALLOC size=32 ok=1
+[TRACE] tick=560 event=ALLOC size=64 ok=1
+[TRACE] tick=561 event=ALLOC size=128 ok=1
+[TRACE] tick=562 event=ALLOC size=256 ok=1
+[TRACE] tick=563 event=ALLOC size=512 ok=1
+[TRACE] tick=565 event=DEALLOC size=32
+[TRACE] tick=566 event=DEALLOC size=128
+[TRACE] tick=567 event=DEALLOC size=512
+[TRACE] tick=568 event=DEALLOC size=64
+[TRACE] tick=570 event=DEALLOC size=256
+[TRACE] tick=571 event=DEALLOC size=32
+[TRACE] tick=572 event=DEALLOC size=128
+[TRACE] tick=573 event=DEALLOC size=512
+[TRACE] tick=574 event=DEALLOC size=64
+[TRACE] tick=575 event=DEALLOC size=256
+[TRACE] tick=576 event=DEALLOC size=32
+[TRACE] tick=577 event=DEALLOC size=128
+[TRACE] tick=578 event=DEALLOC size=512
+[TRACE] tick=579 event=DEALLOC size=64
+[TRACE] tick=580 event=DEALLOC size=256
+[TRACE] tick=581 event=DEALLOC size=32
+[TRACE] tick=582 event=DEALLOC size=128
+[TRACE] tick=583 event=DEALLOC size=512
+[TRACE] tick=584 event=DEALLOC size=64
+[TRACE] tick=585 event=DEALLOC size=256
+[TRACE] tick=586 event=DEALLOC size=32
+[TRACE] tick=587 event=DEALLOC size=128
+[TRACE] tick=588 event=DEALLOC size=512
+[TRACE] tick=589 event=DEALLOC size=64
+[TRACE] tick=590 event=DEALLOC size=256
+[TRACE] tick=591 event=DEALLOC size=32
+[TRACE] tick=592 event=DEALLOC size=128
+[TRACE] tick=593 event=DEALLOC size=512
+[TRACE] tick=594 event=DEALLOC size=64
+[TRACE] tick=595 event=DEALLOC size=256
+[TRACE] tick=596 event=DEALLOC size=32
+[TRACE] tick=597 event=DEALLOC size=128
+[TRACE] tick=598 event=DEALLOC size=512
+[TRACE] tick=599 event=DEALLOC size=64
+[TRACE] tick=600 event=DEALLOC size=256
+[TRACE] tick=601 event=DEALLOC size=32
+[TRACE] tick=602 event=DEALLOC size=128
+[TRACE] tick=603 event=DEALLOC size=512
+[TRACE] tick=604 event=DEALLOC size=64
+[TRACE] tick=605 event=DEALLOC size=256
+[TRACE] tick=606 event=DEALLOC size=32
+[TRACE] tick=607 event=DEALLOC size=128
+[TRACE] tick=608 event=DEALLOC size=512
+[TRACE] tick=609 event=DEALLOC size=64
+[TRACE] tick=610 event=DEALLOC size=256
+[TRACE] tick=611 event=DEALLOC size=32
+[TRACE] tick=613 event=DEALLOC size=128
+[TRACE] tick=615 event=DEALLOC size=512
+[TRACE] tick=616 event=DEALLOC size=64
+[TRACE] tick=617 event=DEALLOC size=256
+[TRACE] tick=619 event=ALLOC size=32 ok=1
+[TRACE] tick=621 event=ALLOC size=64 ok=1
+[TRACE] tick=622 event=ALLOC size=128 ok=1
+[TRACE] tick=623 event=ALLOC size=256 ok=1
+[TRACE] tick=624 event=ALLOC size=512 ok=1
+[TRACE] tick=625 event=ALLOC size=32 ok=1
+[TRACE] tick=626 event=ALLOC size=64 ok=1
+[TRACE] tick=628 event=ALLOC size=128 ok=1
+[TRACE] tick=629 event=ALLOC size=256 ok=1
+[TRACE] tick=630 event=ALLOC size=512 ok=1
+[TRACE] tick=631 event=ALLOC size=32 ok=1
+[TRACE] tick=633 event=ALLOC size=64 ok=1
+[TRACE] tick=634 event=ALLOC size=128 ok=1
+[TRACE] tick=635 event=ALLOC size=256 ok=1
+[TRACE] tick=636 event=ALLOC size=512 ok=1
+[TRACE] tick=637 event=ALLOC size=32 ok=1
+[TRACE] tick=638 event=ALLOC size=64 ok=1
+[TRACE] tick=639 event=ALLOC size=128 ok=1
+[TRACE] tick=640 event=ALLOC size=256 ok=1
+[TRACE] tick=642 event=ALLOC size=512 ok=1
+[TRACE] tick=643 event=ALLOC size=32 ok=1
+[TRACE] tick=644 event=ALLOC size=64 ok=1
+[TRACE] tick=645 event=ALLOC size=128 ok=1
+[TRACE] tick=646 event=ALLOC size=256 ok=1
+[TRACE] tick=647 event=ALLOC size=512 ok=1
+[TRACE] tick=648 event=ALLOC size=32 ok=1
+[TRACE] tick=649 event=ALLOC size=64 ok=1
+[TRACE] tick=650 event=ALLOC size=128 ok=1
+[TRACE] tick=651 event=ALLOC size=256 ok=1
+[TRACE] tick=652 event=ALLOC size=512 ok=1
+[TRACE] tick=653 event=ALLOC size=32 ok=1
+[TRACE] tick=654 event=ALLOC size=64 ok=1
+[TRACE] tick=655 event=ALLOC size=128 ok=1
+[TRACE] tick=656 event=ALLOC size=256 ok=1
+[TRACE] tick=657 event=ALLOC size=512 ok=1
+[TRACE] tick=658 event=ALLOC size=32 ok=1
+[TRACE] tick=659 event=ALLOC size=64 ok=1
+[TRACE] tick=660 event=ALLOC size=128 ok=1
+[TRACE] tick=661 event=ALLOC size=256 ok=1
+[TRACE] tick=662 event=ALLOC size=512 ok=1
+[TRACE] tick=663 event=ALLOC size=32 ok=1
+[TRACE] tick=664 event=ALLOC size=64 ok=1
+[TRACE] tick=665 event=ALLOC size=128 ok=1
+[TRACE] tick=666 event=ALLOC size=256 ok=1
+[TRACE] tick=667 event=ALLOC size=512 ok=1
+[TRACE] tick=668 event=ALLOC size=32 ok=1
+[TRACE] tick=669 event=ALLOC size=64 ok=1
+[TRACE] tick=670 event=ALLOC size=128 ok=1
+[TRACE] tick=671 event=ALLOC size=256 ok=1
+[TRACE] tick=672 event=ALLOC size=512 ok=1
+[TRACE] tick=673 event=ALLOC size=32 ok=1
+[TRACE] tick=674 event=ALLOC size=64 ok=1
+[TRACE] tick=675 event=ALLOC size=128 ok=1
+[TRACE] tick=676 event=ALLOC size=256 ok=1
+[TRACE] tick=677 event=ALLOC size=512 ok=1
+[TRACE] tick=678 event=ALLOC size=32 ok=1
+[TRACE] tick=679 event=ALLOC size=64 ok=1
+[TRACE] tick=680 event=ALLOC size=128 ok=1
+[TRACE] tick=681 event=ALLOC size=256 ok=1
+[TRACE] tick=682 event=ALLOC size=512 ok=1
+[TRACE] tick=683 event=ALLOC size=32 ok=1
+[TRACE] tick=684 event=ALLOC size=64 ok=1
+[TRACE] tick=685 event=ALLOC size=128 ok=1
+[TRACE] tick=686 event=ALLOC size=256 ok=1
+[TRACE] tick=687 event=ALLOC size=512 ok=1
+[TRACE] tick=688 event=ALLOC size=32 ok=1
+[TRACE] tick=689 event=ALLOC size=64 ok=1
+[TRACE] tick=690 event=ALLOC size=128 ok=1
+[TRACE] tick=691 event=ALLOC size=256 ok=1
+[TRACE] tick=692 event=ALLOC size=512 ok=1
+[TRACE] tick=693 event=ALLOC size=32 ok=1
+[TRACE] tick=694 event=ALLOC size=64 ok=1
+[TRACE] tick=695 event=ALLOC size=128 ok=1
+[TRACE] tick=696 event=ALLOC size=256 ok=1
+[TRACE] tick=697 event=ALLOC size=512 ok=1
+[TRACE] tick=698 event=ALLOC size=32 ok=1
+[TRACE] tick=699 event=ALLOC size=64 ok=1
+[TRACE] tick=700 event=ALLOC size=128 ok=1
+[TRACE] tick=701 event=ALLOC size=256 ok=1
+[TRACE] tick=702 event=ALLOC size=512 ok=1
+[TRACE] tick=703 event=ALLOC size=32 ok=1
+[TRACE] tick=704 event=ALLOC size=64 ok=1
+[TRACE] tick=705 event=ALLOC size=128 ok=1
+[TRACE] tick=706 event=ALLOC size=256 ok=1
+[TRACE] tick=707 event=ALLOC size=512 ok=1
+[TRACE] tick=708 event=ALLOC size=32 ok=1
+[TRACE] tick=709 event=ALLOC size=64 ok=1
+[TRACE] tick=710 event=ALLOC size=128 ok=1
+[TRACE] tick=711 event=ALLOC size=256 ok=1
+[TRACE] tick=712 event=ALLOC size=512 ok=1
+[TRACE] tick=713 event=ALLOC size=32 ok=1
+[TRACE] tick=714 event=ALLOC size=64 ok=1
+[TRACE] tick=715 event=ALLOC size=128 ok=1
+[TRACE] tick=716 event=ALLOC size=256 ok=1
+[TRACE] tick=717 event=ALLOC size=512 ok=1
+[TRACE] tick=718 event=ALLOC size=32 ok=1
+[TRACE] tick=719 event=ALLOC size=64 ok=1
+[TRACE] tick=720 event=ALLOC size=128 ok=1
+[TRACE] tick=721 event=ALLOC size=256 ok=1
+[TRACE] tick=722 event=ALLOC size=512 ok=1
+[TRACE] tick=723 event=DEALLOC size=32
+[TRACE] tick=724 event=DEALLOC size=128
+[TRACE] tick=725 event=DEALLOC size=512
+[TRACE] tick=727 event=DEALLOC size=64
+[TRACE] tick=728 event=DEALLOC size=256
+[TRACE] tick=729 event=DEALLOC size=32
+[TRACE] tick=730 event=DEALLOC size=128
+[TRACE] tick=731 event=DEALLOC size=512
+[TRACE] tick=732 event=DEALLOC size=64
+[TRACE] tick=733 event=DEALLOC size=256
+[TRACE] tick=734 event=DEALLOC size=32
+[TRACE] tick=735 event=DEALLOC size=128
+[TRACE] tick=736 event=DEALLOC size=512
+[TRACE] tick=737 event=DEALLOC size=64
+[TRACE] tick=738 event=DEALLOC size=256
+[TRACE] tick=739 event=DEALLOC size=32
+[TRACE] tick=740 event=DEALLOC size=128
+[TRACE] tick=741 event=DEALLOC size=512
+[TRACE] tick=742 event=DEALLOC size=64
+[TRACE] tick=743 event=DEALLOC size=256
+[TRACE] tick=745 event=DEALLOC size=32
+[TRACE] tick=746 event=DEALLOC size=128
+[TRACE] tick=747 event=DEALLOC size=512
+[TRACE] tick=748 event=DEALLOC size=64
+[TRACE] tick=749 event=DEALLOC size=256
+[TRACE] tick=750 event=DEALLOC size=32
+[TRACE] tick=751 event=DEALLOC size=128
+[TRACE] tick=752 event=DEALLOC size=512
+[TRACE] tick=753 event=DEALLOC size=64
+[TRACE] tick=754 event=DEALLOC size=256
+[TRACE] tick=755 event=DEALLOC size=32
+[TRACE] tick=756 event=DEALLOC size=128
+[TRACE] tick=757 event=DEALLOC size=512
+[TRACE] tick=759 event=DEALLOC size=64
+[TRACE] tick=760 event=DEALLOC size=256
+[TRACE] tick=761 event=DEALLOC size=32
+[TRACE] tick=762 event=DEALLOC size=128
+[TRACE] tick=763 event=DEALLOC size=512
+[TRACE] tick=764 event=DEALLOC size=64
+[TRACE] tick=765 event=DEALLOC size=256
+[TRACE] tick=766 event=DEALLOC size=32
+[TRACE] tick=767 event=DEALLOC size=128
+[TRACE] tick=768 event=DEALLOC size=512
+[TRACE] tick=769 event=DEALLOC size=64
+[TRACE] tick=770 event=DEALLOC size=256
+[TRACE] tick=771 event=DEALLOC size=32
+[TRACE] tick=772 event=DEALLOC size=128
+[TRACE] tick=773 event=DEALLOC size=512
+[TRACE] tick=774 event=DEALLOC size=64
+[TRACE] tick=775 event=DEALLOC size=256
+[CA6-ALLOC] Benchmark: LL_avg=236574 cyc, Bump_avg=47040 cyc, LL_reused=9920 B, Bump_reused=0 B
+==================================================
+[CA6-DEMO] CA-6 Integrated Demo Completed Successfully
+==================================================
+BOOT_TIME_MS=34267.203 (TSC ticks=85764923491, freq=2502 MHz)
+micro_os:/> 
