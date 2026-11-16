@@ -1,220 +1,303 @@
-# MicroOS — CA-6 Viva Voce Preparation Guide
-## 20 Anticipated Examination Questions & Model Technical Answers
+# VenOS — Comprehensive Viva Examination & Defense Guide
 
-> **Course:** Operating System Concepts — Continuous Assessment 6 (CA-6)  
-> **Target:** Viva Defense for 15 Marks  
-> **Student:** Venugopal ([GitHub @Venu277](https://github.com/Venu277))  
-> **Repository:** `https://github.com/Venu277/micro_os-continued.git`  
-> **Master Trace:** `traces/step_a8_demo.log` (569 trace events, 715 timer ticks)
-
----
-
-## Part 1: Core Architecture & Scheduling (Q1 – Q5)
-
-### Q1: How does MicroOS represent a task, and why does an async Rust executor fail to satisfy CA-6 requirements?
-**Model Answer:**
-- In MicroOS, tasks are represented by the `KThread` struct ([src/kthread/mod.rs#L80-L88](file:///c:/Users/Venugopal/OneDrive/Desktop/micro_os-main/src/kthread/mod.rs#L80-L88)). A true kernel thread requires:
-  1. A dedicated execution stack (16 KiB allocated from the heap in `stack: Vec<u8>`).
-  2. A preserved hardware CPU register context (`CpuContext` containing callee-saved registers `rsp`, `rbp`, `rbx`, `r12`–`r15`, and `rflags`).
-  3. An explicit 4-state lifecycle machine (`Ready`, `Running`, `Blocked`, `Terminated`).
-- An **async Rust executor** (such as our earlier cooperative task runner in `src/task/executor.rs`) only multiplexes compiler-generated state machine `Future`s across a single shared stack. When a future awaits, it pauses, but if a task runs an infinite compute loop (`loop {}`), it monopolizes the CPU forever because there is no separate stack or timer-driven register swap. CA-6 explicitly requires true preemptive threads with saved register contexts.
-
-### Q2: Walk through the exact mechanism of the assembly context switch.
-**Model Answer:**
-- The context switch is implemented in System V AMD64 assembly within [src/scheduler/context_switch.rs#L14-L44](file:///c:/Users/Venugopal/OneDrive/Desktop/micro_os-main/src/scheduler/context_switch.rs#L14-L44) via `switch_context(prev: *mut CpuContext, next: *const CpuContext)`.
-- According to AMD64 calling conventions, the caller passes `prev` in `%rdi` and `next` in `%rsi`.
-- `switch_context` performs:
-  1. `pushfq ; pop rax` and stores `rax` into `prev->rflags` (saving hardware interrupt flags).
-  2. Saves callee-saved registers into `prev`: `rbp`, `rbx`, `r12`, `r13`, `r14`, `r15`.
-  3. Saves the current stack pointer: `mov [rdi + 48], rsp`.
-  4. Swaps to the new thread's stack pointer: `mov rsp, [rsi + 48]`.
-  5. Restores callee-saved registers from `next`: `r15`, `r14`, `r13`, `r12`, `rbx`, `rbp`.
-  6. Restores interrupt flags: `push [rsi + 56] ; popfq`.
-  7. Executes `ret`. The `ret` instruction pops the top address off the new stack (which was primed with the thread's entry point) into the instruction pointer `%rip`, resuming execution in the incoming thread.
-
-### Q3: How does MicroOS prevent and detect kernel stack overflows?
-**Model Answer:**
-- In [src/kthread/mod.rs#L95-L98](file:///c:/Users/Venugopal/OneDrive/Desktop/micro_os-main/src/kthread/mod.rs#L95-L98), upon thread creation, MicroOS plants a 64-bit magic stack canary (`0xCA60_DEAD_BEEF_0001`) at the lowest address of the allocated 16 KiB stack buffer (`stack[0..8]`).
-- Because x86_64 stacks grow downwards from the highest address (`stack_top`) toward `stack[0]`, any deep call chain or large stack buffer allocation will overwrite this lowest boundary.
-- Before executing context switches or state transitions, the scheduler calls `t.check_stack_overflow()` ([src/kthread/mod.rs#L145-L151](file:///c:/Users/Venugopal/OneDrive/Desktop/micro_os-main/src/kthread/mod.rs#L145-L151)), which compares `stack[0..8]` against the magic bytes. If altered, execution is halted, preventing silent memory corruption. This is validated by TC3 and TC5 in [tests/kthread_ready_queue.rs](file:///c:/Users/Venugopal/OneDrive/Desktop/micro_os-main/tests/kthread_ready_queue.rs).
-
-### Q4: Explain the Ready Queue invariants and time complexity.
-**Model Answer:**
-- The Ready Queue ([src/scheduler/mod.rs#L37-L122](file:///c:/Users/Venugopal/OneDrive/Desktop/micro_os-main/src/scheduler/mod.rs#L37-L122)) is implemented as an encapsulated FIFO deque (`VecDeque<Box<KThread>>`).
-- Operations:
-  - `enqueue(thread)`: Appends to the back in $O(1)$ amortized time.
-  - `dequeue()`: Pops from the front in $O(1)$ time, maintaining strict Round Robin order.
-  - `peek()` / `peek_mut()`: Inspects the head in $O(1)$ time without removal.
-  - `remove(id)`: Removes a specific thread (e.g. for blocking or reaping) in $O(N)$ linear time.
-- Invariants: Threads in the Ready Queue must have state `ThreadState::Ready` and unique `ThreadId`s. Enqueuing an already enqueued ID or an invalid state is prevented.
-
-### Q5: What happens when a kernel thread finishes its entry function?
-**Model Answer:**
-- To prevent a thread from returning into arbitrary unmapped memory, [src/kthread/mod.rs#L107-L114](file:///c:/Users/Venugopal/OneDrive/Desktop/micro_os-main/src/kthread/mod.rs#L107-L114) initializes the new thread's stack with a return trampoline:
-  ```text
-  [stack_top - 8]  <- kthread_exit address
-  [stack_top - 16] <- entry_point address
-  ```
-- When the thread returns from its entry function via `ret`, it pops `kthread_exit` ([src/scheduler/mod.rs#L273](file:///c:/Users/Venugopal/OneDrive/Desktop/micro_os-main/src/scheduler/mod.rs#L273)).
-- `kthread_exit` immediately calls `exit_current_thread()` ([src/scheduler/mod.rs#L306-L344](file:///c:/Users/Venugopal/OneDrive/Desktop/micro_os-main/src/scheduler/mod.rs#L306-L344)), which transitions the thread to `Terminated`, pushes it to `terminated_queue`, selects the next ready thread, and context-switches away. Later, `reap_terminated()` frees the thread's memory.
+> **Project Name:** VenOS (Hobby Operating System Kernel in Rust)  
+> **Author / Student Engineer:** Venugopal ([GitHub @Venu277](https://github.com/Venu277))  
+> **Course:** Operating System Concepts — Flagship Continuous Assessment (CA-6)  
+> **Target Platform:** Real x86_64 Bare-Metal (HP Pavilion 15, Intel Core i5-1335U) & QEMU/OVMF  
+> **Specialization Track:** Track C — Concurrency Engineering & Deadlock Elimination  
 
 ---
 
-## Part 2: Interrupts, Hardware Timing & Preemption (Q6 – Q10)
+## Quick Reference Summary Table for Examiners
 
-### Q6: How is the hardware timer configured, and what is the interrupt frequency?
-**Model Answer:**
-- MicroOS programs the Intel 8253/8254 Programmable Interval Timer (PIT) Channel 0 in Mode 3 (Square Wave Generator) in [src/interrupts.rs#L112-L124](file:///c:/Users/Venugopal/OneDrive/Desktop/micro_os-main/src/interrupts.rs#L112-L124).
-- The PIT base oscillator runs at $1,193,182\text{ Hz}$. MicroOS calculates the 16-bit divisor:
-  $$\text{Divisor} = \frac{1,193,182}{100} = 11,931 \ (\text{hex } \texttt{0x2E9B})$$
-- This generates PIT IRQ0 interrupts at exactly **100 Hz** (1 interrupt every **10.0 ms**).
-
-### Q7: How does MicroOS calibrate the Time Stamp Counter (TSC)?
-**Model Answer:**
-- In [src/interrupts.rs#L130-L165](file:///c:/Users/Venugopal/OneDrive/Desktop/micro_os-main/src/interrupts.rs#L130-L165) (`calibrate_tsc()`), the kernel uses PIT Channel 2 (gate-controlled speaker channel) to measure an exact 10 ms hardware delay window while sampling `_rdtsc()`.
-- Measuring the TSC delta across the known hardware interval yields an accurate clock frequency:
-  $$\text{TSC Frequency} = \Delta \text{TSC} \times 100\text{ Hz} = 2,502\text{ MHz}$$
-- This calibrated frequency is used in `src/main.rs` to compute sub-millisecond boot times without drift.
-
-### Q8: Describe the preemption sequence when a thread's time slice expires.
-**Model Answer:**
-- In [src/interrupts.rs#L77-L86](file:///c:/Users/Venugopal/OneDrive/Desktop/micro_os-main/src/interrupts.rs#L77-L86), when PIT IRQ0 fires:
-  1. The CPU automatically pushes `ss`, `rsp`, `rflags`, `cs`, `rip` onto the TSS IST stack.
-  2. The interrupt handler calls `crate::scheduler::timer_tick()`.
-  3. In [src/scheduler/mod.rs#L225-L270](file:///c:/Users/Venugopal/OneDrive/Desktop/micro_os-main/src/scheduler/mod.rs#L225-L270), `timer_tick()` decrements `current.time_slice_remaining`.
-  4. When the quantum reaches 0, it resets the quantum, transitions `current` to `Ready`, pushes it to the back of `ready_queue`, and dequeues the next `Ready` thread.
-  5. It emits `[TRACE] tick=N event=QUANTUM_EXPIRE` and `event=SWITCH ... reason=quantum`.
-  6. Finally, it executes `context_switch::switch_context(prev_ptr, next_ptr)` inside the interrupt handler before sending EOI to the PIC.
-
-### Q9: What is the measured preemption responsiveness of MicroOS?
-**Model Answer:**
-- In `traces/step_a8_demo.log` (lines 245–248):
-  ```text
-  [TRACE] tick=366 event=QUANTUM_EXPIRE task=88 consumed=3
-  [TRACE] tick=366 event=TASK_STATE task=88 state=READY
-  [TRACE] tick=366 event=TASK_STATE task=89 state=RUNNING
-  [TRACE] tick=366 event=SWITCH from=88 to=89 reason=quantum
-  ```
-- The time difference between `QUANTUM_EXPIRE` and `SWITCH` is **0 ticks** ($< 10\text{ ms}$). Preemption occurs synchronously within the exact same timer tick, achieving immediate preemption responsiveness.
-
-### Q10: How does `PreemptionGuard` prevent reentrant preemption during critical sections?
-**Model Answer:**
-- In [src/scheduler/mod.rs#L30-L36](file:///c:/Users/Venugopal/OneDrive/Desktop/micro_os-main/src/scheduler/mod.rs#L30-L36), preemption is guarded by the atomic flag `PREEMPTION_ENABLED`.
-- When the kernel enters a critical section or non-preemptive benchmark, it instantiates `PreemptionGuard::new()`, which sets `PREEMPTION_ENABLED` to `false`.
-- When `timer_tick()` fires, it inspects `is_preemption_enabled()`. If false, it updates accounting ticks but bypasses quantum depletion and context switching.
-- When `PreemptionGuard` drops, its RAII destructor automatically restores preemption.
+| Core Concept | VenOS Implementation | Key Source Files |
+|---|---|---|
+| **Boot Mode** | Pure 64-bit UEFI (GPT FAT32, `bootloader_api 0.11.17`) | `builder/`, `src/main.rs` |
+| **Display** | UEFI GOP Framebuffer, Anti-aliased font, Aspect Ratio auto-detect | `src/framebuffer.rs` |
+| **Task Model** | `KThread`, 16 KiB Stack, `0xCA60_DEAD_BEEF_0001` Canary | `src/kthread/mod.rs` |
+| **Context Switch** | Hand-written AMD64 Assembly (System V ABI callee-saved) | `src/scheduler/context_switch.rs` |
+| **Scheduler** | Round Robin + 100 Hz PIT Channel 0 Preemption (10 ms ticks) | `src/scheduler/mod.rs`, `src/interrupts.rs` |
+| **Synchronization** | Custom `Spinlock<T>` (Atomic CAS, `PAUSE` loop, contention metrics) | `src/sync/spinlock.rs` |
+| **Deadlock Elimination** | `RankedLock<T>` Strict Partial Order (Eliminates Coffman Condition 4) | `src/sync/ranked.rs` |
+| **Memory Allocators** | Intrusive LinkedListAllocator + BumpAllocator + Dual Frame Allocator | `src/allocator/`, `src/memory.rs` |
+| **Diagnostics** | Dual UART/Serial + 512-record BSS Circular Trace Ring Buffer | `src/diagnostics.rs`, `src/shell.rs` |
+| **Real Hardware** | HP Pavilion Laptop (i5-1335U, Iris Xe, WD SN5000S NVMe, MT7921 WiFi) | Verified via Rufus DD Flash |
 
 ---
 
-## Part 3: Synchronization, Locks & Track C Concurrency (Q11 – Q15)
+## 25 Core Viva Questions & Model Answers
 
-### Q11: How is the hand-written `Spinlock<T>` implemented without deadlocking itself?
-**Model Answer:**
-- In [src/sync/spinlock.rs#L20-L135](file:///c:/Users/Venugopal/OneDrive/Desktop/micro_os-main/src/sync/spinlock.rs#L20-L135), `Spinlock<T>` wraps an `UnsafeCell<T>` with an `AtomicBool` locked flag.
-- Acquisition uses atomic compare-and-swap (`compare_exchange_weak`) with `Acquire` ordering on success and `Relaxed` on failure.
-- If locked, it executes a tight spin loop with `core::hint::spin_loop()` (emitting the x86 `pause` instruction) while tracking spin count metrics.
-- Upon acquiring the lock, it measures hold duration and returns an RAII `SpinlockGuard` that automatically resets `locked` with `Release` ordering on `Drop`.
+### Category 1: Boot, Hardware Discovery & Framebuffer
 
-### Q12: How does Track C strict partial order lock ranking eliminate deadlocks?
-**Model Answer:**
-- Deadlocks occur when there is a circular wait (Task A holds Lock 1 and waits for Lock 2; Task B holds Lock 2 and waits for Lock 1).
-- In [src/sync/ranked.rs#L20-L95](file:///c:/Users/Venugopal/OneDrive/Desktop/micro_os-main/src/sync/ranked.rs#L20-L95), every `RankedLock<T>` is assigned an immutable integer `rank: u32`.
-- When a thread attempts to acquire a lock via `try_lock_ranked()`, the method verifies:
-  $$\text{Requested Rank } R_{\text{req}} > \text{Currently Held Rank } R_{\text{held}}$$
-- If a thread holding Rank 20 attempts to acquire Rank 10, the operation is immediately rejected with `Err(LockRankError::HierarchyViolation)`.
-- Because locks can only be acquired in strictly increasing numerical order, a cyclic dependency cannot form.
+#### Q1: What is the architectural difference between legacy BIOS boot and UEFI boot in x86_64?
+**Answer:**
+Legacy BIOS boots the processor in 16-bit Real Mode with a 1 MiB address space limit, loads a 512-byte Master Boot Record (MBR) from sector 0, and requires the operating system to manually transition through 32-bit Protected Mode before entering 64-bit Long Mode. It relies on legacy 16-bit real-mode software interrupts (`INT 10h`) and memory-mapped VGA text buffer at physical address `0xb8000`.
 
-### Q13: Quote the exact trace log evidence of deadlock prevention in Step A8.
-**Model Answer:**
-- In `traces/step_a8_demo.log` (lines 328–330):
-  ```text
-  [TRACE] tick=476 event=DEADLOCK_PREVENT task=90 req_rank=10 held_rank=20
-  [CA6-DEADLOCK] Out-of-order acquisition prevented: Lock ranking violation: requested rank 10 <= held rank 20 (deadlock prevented)
-  ```
-- Task 90 held `vfs_lock` (Rank 20) and attempted to acquire `driver_lock` (Rank 10). The acquisition was rejected cleanly, preventing a circular wait condition.
-
-### Q14: What lock contention metrics does MicroOS measure?
-**Model Answer:**
-- MicroOS tracks four atomic metrics inside `Spinlock<T>` ([src/sync/spinlock.rs#L25-L35](file:///c:/Users/Venugopal/OneDrive/Desktop/micro_os-main/src/sync/spinlock.rs#L25-L35)):
-  1. `acquisitions`: Total successful lock acquisitions.
-  2. `contentions`: Times the lock was found already held on first attempt.
-  3. `spins_waited`: Accumulated pause iterations spent waiting.
-  4. `max_spins`: Maximum wait latency observed for a single acquisition.
-- In `traces/step_a6_sync.log`, under two competing threads, the contention rate reached **50.0%** with a maximum wait latency of **31,520 spins**.
-
-### Q15: How does the RAII `RankedLockGuard` manage nested lock releases?
-**Model Answer:**
-- When `RankedLockGuard` is instantiated ([src/sync/ranked.rs#L50-L60](file:///c:/Users/Venugopal/OneDrive/Desktop/micro_os-main/src/sync/ranked.rs#L50-L60)), it stores `previous_rank: u32` representing the rank held prior to acquiring this lock.
-- When the guard drops, its `Drop` implementation restores `CURRENT_HELD_RANK` to `previous_rank`.
-- This ensures that when nested locks unwind (e.g. Rank 10 -> Rank 20 -> Rank 30), the held rank decreases monotonically in LIFO order, allowing sibling acquisitions at lower ranks once outer locks are released.
+In contrast, **UEFI (Unified Extensible Firmware Interface)** boots 64-bit firmware natively in Long Mode with paging enabled. It understands disk partition tables (GUID Partition Table / GPT) and loads the kernel from an EFI System Partition (FAT32) via `\EFI\BOOT\BOOTX64.EFI`. UEFI provides the Graphics Output Protocol (GOP) linear framebuffer at high resolutions without legacy VGA hardware. VenOS boots purely via UEFI (`bootloader_api 0.11.17`).
 
 ---
 
-## Part 4: Memory Management, Paging & Allocators (Q16 – Q18)
+#### Q2: How does the UEFI Graphics Output Protocol (GOP) work in VenOS, and how does your software text console render text?
+**Answer:**
+During early boot, the UEFI bootloader negotiates a linear physical memory framebuffer with the graphics card (e.g. 1920x1200 on my HP laptop, 1280x800 in QEMU). UEFI provides a `FrameBuffer` structure containing the physical base address, byte length, width, height, stride, and pixel format (`Bgr` or `Rgb`).
 
-### Q16: How does MicroOS manage kernel memory and paging?
-**Model Answer:**
-- MicroOS runs in 64-bit Long Mode with 4-level paging ([src/memory.rs#L20-L55](file:///c:/Users/Venugopal/OneDrive/Desktop/micro_os-main/src/memory.rs#L20-L55)).
-- The bootloader passes an identity-mapped physical memory offset. `memory::init()` reads CR3 to access the active Level 4 page table.
-- A 256 KiB virtual heap `[0x4444_4444_0000 .. +256KiB]` is mapped using `BootInfoFrameAllocator` frames and registered under Rust's `#[global_allocator]`.
-
-### Q17: Compare the algorithmic trade-offs between the Linked List Allocator and Bump Allocator.
-**Model Answer:**
-- **Bump Allocator (`src/allocator/bump.rs`):**
-  - *Mechanism:* Advances a single `next` pointer linearly.
-  - *Speed:* Ultra-fast $O(1)$ allocation (**47,040 cycles** vs 236,574 cycles; **5.03x speedup**).
-  - *Limitation:* Cannot reclaim intermediate freed blocks; memory reuse is **0 Bytes** until all allocations are freed.
-- **Intrusive Linked List Allocator (`src/allocator/linked_list.rs`):**
-  - *Mechanism:* Maintains a free list threaded through unallocated memory nodes.
-  - *Speed:* Slower $O(N)$ traversal (**236,574 cycles**).
-  - *Advantage:* Reclaims arbitrary non-tail freed blocks immediately (**9,920 Bytes reused, 100% reclamation**).
-
-### Q18: What is the significance of the structured allocation traces?
-**Model Answer:**
-- MicroOS emits `[TRACE] tick=N event=ALLOC size=S ok=1` and `event=DEALLOC size=S` over serial port `0x3F8`.
-- In `traces/step_a8_demo.log`, the analyzer parsed **200 allocations** and **100 deallocations** totaling 39,680 Bytes across 5 size classes (32, 64, 128, 256, 512 Bytes).
-- Because tracing writes directly to the UART hardware register without calling `alloc`, it provides zero-allocation observability into kernel heap activity without perturbing heap state.
+VenOS's software text console (`src/framebuffer.rs`) maps this framebuffer into virtual memory and renders text using anti-aliased bitmap glyphs from `noto-sans-mono-bitmap` (8x16 pixels per character). When a character is printed:
+1. The font rasterizer converts the character's glyph into an 8x16 alpha mask.
+2. For each pixel, the kernel calculates the framebuffer byte offset: `offset = (y * stride + x) * bytes_per_pixel`.
+3. It blends the glyph's intensity with the foreground and background colors and writes the 32-bit pixel value directly into video RAM.
+4. When the screen fills, `scroll_up()` shifts all pixel rows upward by 16 pixels using fast memory copies and clears the bottom row.
 
 ---
 
-## Part 5: The 5 Toughest External Examiner Questions (Q19 – Q20 + 3 Technical Probes)
+#### Q3: How does your kernel dynamically discover and adapt to different screen aspect ratios?
+**Answer:**
+In `src/framebuffer.rs`, VenOS implements the Euclidean Greatest Common Divisor (`gcd`) algorithm to reduce the framebuffer's width and height to their simplest whole number ratio:
+$$\text{divisor} = \gcd(\text{width}, \text{height})$$
+$$\text{aspect\_x} = \frac{\text{width}}{\text{divisor}}, \quad \text{aspect\_y} = \frac{\text{height}}{\text{divisor}}$$
 
-### Q19 (Examiner Question): Why does your `switch_context` assembly assume a 16-byte stack alignment, and what catastrophic bug occurs if it is 8-byte aligned?
-**Model Answer:**
-- The System V AMD64 ABI specification requires that the stack pointer `%rsp` must be **16-byte aligned immediately before a `call` instruction is executed**. When `call` pushes the 8-byte return address, `%rsp` enters the callee aligned to $16k + 8$.
-- Inside the callee, if SSE/AVX vector instructions (e.g. `movaps`, `movdqa`) or floating-point compiler-generated code run on a stack variable that is not 16-byte aligned, the CPU triggers a **General Protection Fault (`#GP`, Exception 13)** and crashes.
-- In [src/kthread/mod.rs#L102-L106](file:///c:/Users/Venugopal/OneDrive/Desktop/micro_os-main/src/kthread/mod.rs#L102-L106), MicroOS explicitly aligns `stack_top` to 16 bytes:
-  $$\text{aligned\_top} = \text{raw\_top} \ \& \ \sim 15$$
-  Then, pushing `kthread_exit` (8 bytes) and `entry_point` (8 bytes) places `%rsp` exactly at a 16-byte boundary, guaranteeing `#GP` exceptions can never occur.
+It matches the reduced ratio against known display standards:
+- 16:10 (e.g. $1920 \times 1200$ on my HP Pavilion laptop, $1280 \times 800$ in QEMU) labeled as `16:10 (Productivity Widescreen)`.
+- 16:9 ($1920 \times 1080$, $1280 \times 720$) labeled as `16:9 (Standard Widescreen)`.
+- 4:3 and 5:4 for legacy displays.
+The kernel uses these dimensions to dynamically calculate text grid columns ($W / 9$) and rows ($H / 16$) and scales UI elements accordingly.
 
-### Q20 (Examiner Question): Can Rust's compile-time type system guarantee deadlock freedom without runtime lock ranking?
-**Model Answer:**
-- Rust's type system (`Send` and `Sync`) guarantees **data-race freedom**, but it **does not guarantee deadlock freedom**.
-- Compile-time deadlock prevention is possible in Rust only if lock acquisitions are encoded into affine types or session types (e.g. passing a token `Token<Rank10>` to acquire `Token<Rank20>`), but this restricts dynamic, data-dependent locking orders and recursive data structures.
-- MicroOS combines Rust's compile-time RAII `Drop` safety (guaranteeing locks are never leaked) with a lightweight runtime ranking check (`try_lock_ranked()`). This rejects out-of-order acquisitions in $O(1)$ time while retaining full runtime flexibility.
+---
 
-### Q21 (Technical Probe): During Step A8, you encountered an allocation failure when allocating 32 KiB on a 256 KiB heap. What caused this, and why was it not a memory leak?
-**Model Answer:**
-- The failure was caused by **external memory fragmentation in the intrusive linked list allocator**, not a memory leak.
-- After running TC1–TC6, round-robin, preemption, and synchronization demos, multiple 16 KiB thread stacks were allocated and freed. Because our linked list `add_free_region` ([src/allocator/linked_list.rs#L51-L56](file:///c:/Users/Venugopal/OneDrive/Desktop/micro_os-main/src/allocator/linked_list.rs#L51-L56)) prepended freed chunks to the head without contiguous block coalescing, the heap had over 200 KiB of total free memory, but the largest contiguous chunk was only 16 KiB.
-- When the benchmark requested a single contiguous 32 KiB buffer, no single node could satisfy the request.
-- **Engineering Fix:** We resolved this by allocating `TEST_HEAP_BUFFER` in the kernel's BSS segment ([src/allocator.rs#L135](file:///c:/Users/Venugopal/OneDrive/Desktop/micro_os-main/src/allocator.rs#L135)) with `#[repr(align(16))]`, decoupling benchmark test harnesses from dynamic kernel heap churn.
+#### Q4: How does your adaptive heap sizing work? Why not just use a fixed 256 KiB heap?
+**Answer:**
+A fixed heap size is either too large for low-memory virtual machines (causing boot crashes) or too small for modern multi-gigabyte hardware (causing premature Out-Of-Memory errors).
 
-### Q22 (Technical Probe): Why is a spinlock unsafe to use in an interrupt handler if interrupts are not disabled?
-**Model Answer:**
-- If Thread A acquires Spinlock $L$ in thread context, and a hardware timer interrupt fires on the same CPU core before Thread A releases $L$:
-- The interrupt service routine (ISR) begins executing on the same CPU and attempts to acquire Spinlock $L$.
-- The ISR enters a spin loop waiting for `locked` to become false. However, Thread A cannot execute because the ISR is preempting it on the same core.
-- The core enters an **infinite unrecoverable live-lock**.
-- MicroOS prevents this in [src/scheduler/mod.rs#L310](file:///c:/Users/Venugopal/OneDrive/Desktop/micro_os-main/src/scheduler/mod.rs#L310) by wrapping scheduler critical sections in `x86_64::instructions::interrupts::without_interrupts(|| { ... })`, disabling the interrupt flag (`IF=0`) before acquiring spinlocks.
+In `src/allocator.rs`, VenOS inspects all memory segments returned by the bootloader memory map and sums the total usable physical RAM ($M_{\text{usable}}$). It sizes the heap adaptively to $\frac{1}{64}\text{th}$ of usable RAM, clamped within safe boundaries:
+$$\text{Heap Size} = \text{clamp}\left(\frac{M_{\text{usable}}}{64}, 256\text{ KiB}, 4\text{ MiB}\right)$$
+On a machine with 107 MiB usable RAM, it maps a 1,720 KiB heap, dynamically allocating page tables during early boot.
 
-### Q23 (Technical Probe): If an external examiner asks you to demonstrate that timer preemption is truly involuntary and not cooperative, which trace and code do you show?
-**Model Answer:**
-1. **The Code:** Point to `preempt_worker_alpha` in [src/scheduler/mod.rs#L446-L459](file:///c:/Users/Venugopal/OneDrive/Desktop/micro_os-main/src/scheduler/mod.rs#L446-L459). Worker Alpha executes a CPU-bound while loop with `spin_loop()`, with **zero calls to `yield_now()` or any blocking function**.
-2. **The Hardware Interrupt:** Show `timer_tick()` in [src/interrupts.rs#L83](file:///c:/Users/Venugopal/OneDrive/Desktop/micro_os-main/src/interrupts.rs#L83), called directly by PIT IRQ0.
-3. **The Trace Evidence:** Show `traces/step_a8_demo.log` (lines 245–248):
-   ```text
-   [TRACE] tick=366 event=QUANTUM_EXPIRE task=88 consumed=3
-   [TRACE] tick=366 event=SWITCH from=88 to=89 reason=quantum
-   ```
-   The switch reason is explicitly logged as `reason=quantum`, demonstrating that the CPU was involuntarily confiscated from Worker Alpha by hardware interrupt timer preemption.
+---
+
+#### Q5: How does VenOS discover ACPI tables on modern UEFI Class 3 systems without legacy BIOS memory scanning?
+**Answer:**
+On legacy BIOS systems, an OS scans the Extended BIOS Data Area (EBDA physical addresses `0x9FC00..0xA0000`) or BIOS ROM (`0xE0000..0xFFFFF`) searching for the 8-byte ASCII signature `"RSD PTR "`. On modern UEFI Class 3 systems (like my 13th Gen Intel laptop), the legacy EBDA does not exist, and scanning unmapped physical memory causes hardware page faults.
+
+VenOS solves this cleanly: `bootloader_api` queries the UEFI System Table during boot services and passes the physical address of the ACPI Root System Description Pointer directly via `boot_info.rsdp_addr`. In `src/acpi.rs:init_acpi_with_rsdp()`, VenOS ingests this physical address directly, validates the revision and checksum, and traverses the RSDT/XSDT tables to parse MADT (APIC core topology) and FADT (power management) safely.
+
+---
+
+### Category 2: Task Representation, Ready Queue & Context Switching
+
+#### Q6: What are callee-saved vs caller-saved registers in the AMD64 System V ABI, and which ones does your context switch save?
+**Answer:**
+Under the System V AMD64 ABI:
+- **Caller-Saved (Volatile) Registers:** `RAX`, `RCX`, `RDX`, `RSI`, `RDI`, `R8`, `R9`, `R10`, `R11`. If a function needs these across a call, it must save them itself before issuing `call`.
+- **Callee-Saved (Non-Volatile) Registers:** `RBX`, `RSP`, `RBP`, `R12`, `R13`, `R14`, `R15`. A called function **must** preserve these values for its caller.
+
+Because `switch_context(prev, next)` is called as a standard C-compatible function from Rust, the compiler expects `switch_context` to preserve the callee-saved registers. Therefore, our assembly routine only needs to save and restore:
+`R15`, `R14`, `R13`, `R12`, `RBX`, `RBP`, `RFLAGS`, and `RSP`.
+All caller-saved registers were already pushed to the stack or saved by the Rust compiler before calling `switch_context`.
+
+---
+
+#### Q7: Why does your assembly `switch_context` routine not explicitly save the Instruction Pointer (RIP)?
+**Answer:**
+When the Rust scheduler executes `switch_context(...)`, the CPU hardware automatically pushes the return address (the next instruction pointer `RIP`) onto the current thread's stack.
+
+In our assembly routine:
+1. When we save `[rdi + 0x30], rsp`, the saved stack pointer points directly to that return address on the outgoing thread's stack.
+2. When switching to the incoming thread, we load its stack pointer `mov rsp, [rsi + 0x30]`.
+3. When we execute the assembly `ret` instruction, the CPU hardware automatically pops the 8-byte return address off the target thread's stack directly into the `RIP` register.
+Thus, `RIP` transfer is handled entirely and safely by the CPU's native call/ret hardware stack mechanism.
+
+---
+
+#### Q8: What is a stack canary, how is it placed, and how does it detect stack overflow in VenOS?
+**Answer:**
+In x86_64, stacks grow downwards (from high memory addresses to low memory addresses). When a function allocates large local arrays or recurses deeply, it pushes data downwards. If it exhausts its allocated 16 KiB buffer, it will overflow into adjacent heap data structures.
+
+To detect this, when `KThread::new()` allocates the 16 KiB stack buffer, it writes a unique 64-bit magic pattern—`0xCA60_DEAD_BEEF_0001`—into the very lowest 8 bytes of the stack (the stack base). Before every context switch, `scheduler::schedule()` invokes `check_stack_overflow()`. If the 8 bytes at the stack base differ from the magic canary, the kernel knows an overflow occurred, immediately logs an error, terminates the thread, and prevents memory corruption.
+
+---
+
+#### Q9: What is the 4-state thread lifecycle model in VenOS, and how does the kernel enforce legal state transitions?
+**Answer:**
+Every `KThread` in VenOS is in one of four states:
+1. `Ready`: Runnable, waiting in the FIFO `ReadyQueue`.
+2. `Running`: Currently actively executing instructions on the CPU core.
+3. `Blocked`: Waiting for a lock or I/O event.
+4. `Terminated`: Function finished execution, awaiting memory reclamation.
+
+In `src/kthread/mod.rs`, `transition_to(new_state)` validates state transitions against an explicit transition matrix:
+- Permitted: `Ready -> Running`, `Running -> Ready`, `Running -> Blocked`, `Blocked -> Ready`, `Running -> Terminated`.
+- Prohibited: `Terminated -> Running` (cannot resurrect a dead task), `Blocked -> Running` (must go through Ready queue first). Illegal transitions return `Err` and emit a diagnostic trace.
+
+---
+
+#### Q10: How does thread termination and stack reclamation work? Why can't a thread free its own stack while running?
+**Answer:**
+A thread cannot free its own stack because it is actively using that stack for its own execution frames, local variables, and return pointers. If it deallocated its stack buffer, the deallocation routine would overwrite the memory containing its own code return address, causing an immediate crash or triple fault.
+
+VenOS solves this through **cooperative reaping**:
+1. When a thread's entry function returns, it enters `thread_exit_trampoline()`.
+2. The trampoline marks the thread as `ThreadState::Terminated` and voluntarily yields CPU control to the scheduler.
+3. The scheduler switches the CPU stack pointer `RSP` to a different ready thread's stack.
+4. Later, the scheduler's garbage collector (`reap_terminated()`) runs on a different stack, scans the terminated list, drops the finished threads, and safely returns their 16 KiB stack buffers to the heap.
+
+---
+
+### Category 3: Preemptive Scheduling & Hardware Timers
+
+#### Q11: Explain the difference between cooperative and preemptive multitasking. How does VenOS implement both?
+**Answer:**
+- **Cooperative Multitasking:** Threads voluntarily surrender the CPU by calling `yield_now()`. If a thread enters an infinite loop (`while true {}`), the entire operating system hangs.
+- **Preemptive Multitasking:** The operating system forcibly interrupts a running thread using a hardware timer, pauses its execution, and switches to another thread without the running thread's cooperation.
+
+VenOS implements both:
+- Cooperative multitasking is supported via `scheduler::yield_now()`.
+- Preemptive multitasking is driven by the Intel 8253 Programmable Interval Timer (PIT) Channel 0, programmed to trigger IRQ 0 interrupts 100 times per second (every 10 ms). The interrupt service routine decrements the running task's quantum; when it expires, the kernel executes an involuntary context switch.
+
+---
+
+#### Q12: What is a `PreemptionGuard`, and why is it essential in kernel synchronization?
+**Answer:**
+If a timer interrupt fires while the kernel is holding a spinlock or modifying the `ReadyQueue`, and the scheduler immediately switches context to another thread that attempts to acquire the same spinlock or modify the ready queue, a **deadlock** or memory corruption occurs.
+
+VenOS uses an RAII pattern called `PreemptionGuard` (`src/scheduler/mod.rs`). Upon instantiation, `PreemptionGuard::new()` atomically decrements/disables the global `PREEMPTION_ENABLED` flag. While preemption is disabled, timer interrupts still update the clock tick counters but **skip** involuntary context switches. When the guard leaves scope and drops, it automatically re-enables preemption. This guarantees critical sections execute without interruption.
+
+---
+
+### Category 4: Track C Concurrency & Synchronization
+
+#### Q13: How does your hand-written spinlock work? Why do you use `core::hint::spin_loop()`?
+**Answer:**
+In `src/sync/spinlock.rs`, `Spinlock<T>` protects data using an atomic boolean flag (`AtomicBool`).
+1. **Acquisition:** The calling thread executes `compare_exchange(false, true, Ordering::Acquire, Ordering::Relaxed)`. If the lock was `false`, it flips to `true` and returns a `SpinlockGuard<T>`.
+2. **Busy-Waiting:** If the lock was already held, the thread enters a loop executing `compare_exchange_weak` and calling `core::hint::spin_loop()`.
+3. **CPU `PAUSE` Instruction:** `core::hint::spin_loop()` compiles directly into the x86 `PAUSE` assembly instruction. This signals the CPU pipeline that it is in a spin-wait loop, which prevents memory order pipeline violations and reduces CPU core power consumption.
+4. **RAII Drop:** When the `SpinlockGuard` goes out of scope, its `drop()` method records the hold duration and stores `false` into the flag with `Ordering::Release`.
+
+---
+
+#### Q14: Explain the memory ordering semantics (`Acquire` and `Release`) used in your spinlock.
+**Answer:**
+Modern x86_64 processors execute instructions out-of-order for performance. To ensure correctness without full memory barriers:
+- **`Ordering::Acquire` (on Lock Acquisition):** Ensures that all memory reads and writes that appear *after* the lock acquisition in code cannot be reordered by the compiler or CPU to execute *before* the lock is acquired. This guarantees that no thread reads stale data before it actually owns the lock.
+- **`Ordering::Release` (on Lock Release):** Ensures that all memory reads and writes performed *inside* the critical section are fully committed to memory *before* the lock is marked as free (`false`). This guarantees that subsequent lock holders will see the updated data.
+
+---
+
+#### Q15: What are the four Coffman conditions for deadlock, and how does VenOS eliminate deadlocks?
+**Answer:**
+Edward G. Coffman Jr. proved in 1971 that a system deadlock requires four simultaneous conditions:
+1. **Mutual Exclusion:** At least one resource must be non-shareable.
+2. **Hold and Wait:** A thread holds resources while waiting for additional resources.
+3. **No Preemption:** Resources cannot be forcibly taken from a holding thread.
+4. **Circular Wait:** A closed chain of threads exists such that each thread holds at least one resource needed by the next.
+
+VenOS eliminates deadlocks by **mechanically eliminating Condition 4 (Circular Wait)** using **Strict Partial Order Lock Ranking** (`RankedLock<T>` in `src/sync/ranked.rs`). Every lock is assigned a numerical rank. A thread holding rank $R_{\text{held}}$ can only acquire locks of strictly higher rank $R_{\text{req}} > R_{\text{held}}$. Because a monotonic ascending sequence cannot form a cycle, circular wait is mathematically impossible.
+
+---
+
+#### Q16: What happens if a thread in VenOS attempts to acquire an out-of-order lock?
+**Answer:**
+VenOS does not allow the thread to block or deadlock. In `RankedLock::try_lock_ranked()`:
+1. The kernel checks if `self.rank <= CURRENT_HELD_RANK`.
+2. If true, it immediately rejects the call, returning `Err(LockRankError::HierarchyViolation)`.
+3. It emits a structured machine diagnostic event:
+   `[TRACE] tick=N event=DEADLOCK_PREVENT task=X req_rank=10 held_rank=20`
+4. The calling thread retains its currently held locks and can gracefully handle the error (e.g. drop its held locks and re-acquire in the proper order).
+
+---
+
+#### Q17: What contention telemetry does VenOS capture for each lock?
+**Answer:**
+Every `Spinlock` in VenOS maintains five atomic diagnostic counters (`LockStats`):
+1. `acquisitions`: Total successful lock acquisitions.
+2. `contentions`: Count of times an acquisition attempt encountered an already-held lock.
+3. `spins_waited`: Cumulative busy-wait spin cycles spent spinning before acquisition.
+4. `max_spins`: Peak spin wait duration encountered across all acquisitions.
+5. `hold_ticks`: Cumulative PIT timer ticks the lock was held prior to release.
+These metrics can be inspected live via `ca6 sync` or exported to CSV/JSON via Python trace parsers.
+
+---
+
+### Category 5: Memory Allocation & Diagnostics
+
+#### Q18: Compare your hand-written intrusive linked list allocator and sequential bump allocator.
+**Answer:**
+- **Intrusive LinkedListAllocator (`src/allocator/linked_list.rs`):**
+  - Maintains a linked list of free memory holes. The list node pointers (`ListNode`) are stored *inside the free memory holes themselves* (intrusive), requiring zero external memory overhead.
+  - When memory is freed, the allocator re-inserts the block into the free list and coalesces adjacent holes.
+  - In our empirical 100-block benchmark: latency averaged 47,625 cycles; upon freeing 50% of allocations, **9,920 Bytes** of memory were immediately reclaimed and reused.
+- **Sequential BumpAllocator (`src/allocator/bump.rs`):**
+  - Maintains a single `next` pointer and bumps it forward by the requested allocation size.
+  - Extremely fast: latency averaged 16,944 cycles (2.81x faster than linked list).
+  - Limitation: It cannot free individual blocks; memory can only be reclaimed by resetting the entire allocator when all allocations are dropped (0 Bytes reclaimed after 50% individual free).
+
+---
+
+#### Q19: Why did you implement a 512-record static circular ring buffer in BSS instead of using heap memory for diagnostics?
+**Answer:**
+In an operating system kernel, diagnostic logging must work **everywhere**—including early boot before the heap is mapped, inside Interrupt Service Routines (ISRs) where heap allocation could cause deadlocks or page faults, and during Out-Of-Memory (OOM) panics.
+
+If the logger allocated heap memory (like `alloc::vec::Vec`), logging an allocation failure would trigger another allocation, causing infinite recursion and kernel panic.
+By placing 512 `TraceRecord` structs in a static array in the `.bss` section (`src/diagnostics.rs`), trace logging requires **zero dynamic heap allocation**, executes in constant $O(1)$ time, and safely overwrites the oldest entries when full.
+
+---
+
+#### Q20: What is the dual-bootloader physical frame allocator (`IntoFrameSource`), and why was it necessary?
+**Answer:**
+Our UEFI live bootloader uses `bootloader_api 0.11.17`, which represents physical memory as `bootloader_api::info::MemoryRegions`. However, our standalone QEMU integration test runner (`tests/`) uses `bootloader 0.9.35`, which represents physical memory as `bootloader::bootinfo::MemoryMap`.
+
+To avoid maintaining two separate memory managers, in `src/memory.rs` we defined:
+```rust
+pub trait IntoFrameSource {
+    fn into_frame_source(self) -> FrameSource;
+}
+```
+`BootInfoFrameAllocator::init()` accepts any type implementing `IntoFrameSource`. This allows the exact same physical frame allocator and paging code to seamlessly run on modern UEFI hardware and legacy BIOS test harnesses without code duplication.
+
+---
+
+### Category 6: Real Bare-Metal Hardware & Deployment
+
+#### Q21: What specific bare-metal hardware did you test VenOS on?
+**Answer:**
+VenOS was tested and verified on a physical **HP Pavilion 15 laptop** with:
+- **Processor:** 13th Gen Intel Core i5-1335U (10 Cores: 2 Performance cores + 8 Efficient cores, 12 Threads, base frequency 1.30 GHz, turbo up to 4.60 GHz).
+- **Graphics:** Intel Iris Xe Graphics driving a 15.6" IPS display at $1920 \times 1200$ (16:10 aspect ratio).
+- **Storage:** Western Digital PC SN5000S 512GB NVMe PCIe Gen4 SSD.
+- **Wireless:** MediaTek MT7921 Wi-Fi 6 802.11ax PCIe Network Adapter.
+- **Keyboard:** HP Embedded Controller PS/2 keyboard emulation (`ACPI\HPQ8001`).
+- **Firmware:** HP InsydeH2O UEFI Class 3 firmware.
+
+---
+
+#### Q22: Why did Rufus require "DD Image mode" instead of "ISO mode" when flashing your USB?
+**Answer:**
+An ISO image (ISO 9660) is a format originally designed for optical compact discs (CDs/DVDs), relying on 2048-byte sectors and El Torito boot extensions.
+
+`venos-uefi.img` is **not** an optical disc image—it is a raw, block-level hard disk image formatted with a **GUID Partition Table (GPT)** containing a 512-byte sector FAT32 EFI System Partition (`\EFI\BOOT\BOOTX64.EFI`).
+When Rufus writes in "DD Image mode", it performs a bit-for-bit raw byte copy directly to the USB flash drive's physical blocks (equivalent to Unix `dd`). This writes the GPT header to LBA 1 and the EFI system partition starting at LBA 2048, allowing the UEFI firmware to recognize the USB drive as a valid bootable UEFI hard disk.
+
+---
+
+#### Q23: Why was it necessary to disable Secure Boot in your laptop's BIOS?
+**Answer:**
+UEFI Secure Boot is a cryptographic verification mechanism. When enabled, the motherboard firmware only executes bootloader binaries signed with an authorized digital certificate stored in the firmware's Key Enrollment Database (typically the Microsoft 3rd Party UEFI Certificate Authority).
+
+Because VenOS is a custom educational/hobby operating system compiled from source, its `BOOTX64.EFI` binary is unsigned. If Secure Boot were enabled, the firmware would display `Selected boot image did not authenticate` and refuse to boot. Disabling Secure Boot allows the firmware to load our custom UEFI bootloader.
+
+---
+
+#### Q24: What is the networking status on your bare-metal laptop vs in QEMU?
+**Answer:**
+This is documented in `docs/NETWORKING_STATUS.md`:
+- **On Bare-Metal Laptop:** The physical HP laptop contains a MediaTek MT7921 Wi-Fi 6 PCIe NIC (`0x14C3:0x7961`). VenOS discovers this device via PCI scanning and resolves its vendor name. However, operating the MT7921 requires closed-source proprietary MediaTek firmware binaries, which are not included in the kernel. The device is truthfully labeled as `[Detected on PCI bus, no native driver - simulated fallback active]`. There is no physical RJ-45 Ethernet port on the laptop.
+- **In QEMU Virtual Machine:** VenOS contains a full DMA driver for the emulated Intel 82540EM (e1000) Gigabit NIC, connected to the `smoltcp` TCP/IP stack (`10.0.2.15/24`).
+- **Wireless Simulation:** Both bare metal and QEMU run our software `SimulatedWiFi` stack, which simulates 802.11 active scanning and the WPA2 4-Way handshake.
+
+---
+
+#### Q25: What is your policy and audit regarding `unsafe` Rust in VenOS?
+**Answer:**
+VenOS adheres to a strict zero-compromise `unsafe` policy (detailed in `docs/UNSAFE_AUDIT.md`):
+1. **Encapsulation:** `unsafe` is strictly forbidden in normal kernel logic, scheduler algorithms, and shell commands. It is restricted to the lowest hardware abstraction boundary (register context switching, page table manipulation, CPU port I/O, and raw pointer dereferencing in atomic guards).
+2. **Safety Invariants:** Every single `unsafe` block is preceded by a `// SAFETY:` comment establishing the exact hardware or mathematical precondition that guarantees memory safety.
+3. **Formal Audit:** All 11 unsafe operational blocks across the codebase were audited, bounded, and verified via automated test targets.

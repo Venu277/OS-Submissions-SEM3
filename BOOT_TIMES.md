@@ -41,10 +41,13 @@
 | **Step V10** | **Integrated Demo & Test Cases TC1–TC6 (Layers 1-10 verified, parse_trace.py, 4 evaluation plots)** | **1268.942 ms** | **~2.2 s** | — | **QEMU/OVMF (EDK2 x86_64, TSC @ 2499 MHz, 3.171G ticks)** | 2026-11-16 |
 | **Step V11** | **Networking Status & MediaTek MT7921 Disclosure (Hardware audit, NETWORKING_STATUS.md)** | **1477.311 ms** | **~2.2 s** | — | **QEMU/OVMF (EDK2 x86_64, TSC @ 2500 MHz, 3.693G ticks)** | 2026-11-16 |
 | **Step V12** | **Distribution Packaging & Release Engineering (scripts/package_release.ps1, dist/ artifacts, Rufus DD mode)** | **584.775 ms** | **~2.0 s** | — | **QEMU/OVMF (EDK2 x86_64, TSC @ 2499 MHz, 1.461G ticks)** | 2026-11-16 |
+| **Step V13** | **Final Technical Report & Submission Package (CA6_FINAL_REPORT.md, ARCHITECTURE.md, VIVA_PREPARATION.md)** | **1160.590 ms** | **~2.2 s** | — | **QEMU/OVMF (EDK2 x86_64, TSC @ 2490 MHz, 2.889G ticks)** | 2026-11-16 |
 
 ---
 
 ## Notes
+
+- In Step V13, the final technical documentation package was completed: 20-section comprehensive engineering report (`docs/CA6_FINAL_REPORT.md`), full visual architecture specification with Mermaid diagrams (`docs/ARCHITECTURE.md`), 25-question student viva defense guide (`docs/VIVA_PREPARATION.md`), and transparent AI collaboration statement (`docs/AI_DISCLOSURE.md`). Boot time to shell prompt: **1160.590 ms** (calibrated @ 2490 MHz, raw trace: `traces/step_v13_submission_package.log`).
 
 - In Step V12, the distribution packaging pipeline was established via `scripts/package_release.ps1`. The release build produces a compact 2.06 MB bootable UEFI disk image (`dist/venos-uefi.img`), verified cryptographic hashes (`SHA256SUMS`), hardware flashing instructions (`README.txt`), and a distribution archive (`dist/venos-uefi-v0.1.0-x86_64.zip`, 331 KB). Flashing via Rufus in DD Image mode was verified on real bare-metal hardware. Boot time to shell prompt: **584.775 ms** (calibrated @ 2499 MHz, raw trace: `traces/step_v12_distribution_packaging.log`).
 
