@@ -124,6 +124,7 @@ pub struct AcpiInfo {
     pub reset_supported: bool,
     pub reset_port: u16,
     pub reset_val: u8,
+    pub table_signatures: Vec<String>,
 }
 
 pub static ACPI_INFO: Mutex<Option<AcpiInfo>> = Mutex::new(None);
@@ -136,30 +137,55 @@ pub fn verify_checksum(slice: &[u8]) -> bool {
 
 /// Scan physical memory for the ACPI Root System Description Pointer (RSDP).
 pub fn init_acpi(phys_mem_offset: VirtAddr) {
-    serial_println!("Scanning physical memory for ACPI RSDP descriptor...");
+    init_acpi_with_rsdp(phys_mem_offset, None);
+}
 
-    // Search EBDA (0x80000 - 0x9FFFF) and BIOS ROM (0xE0000 - 0xFFFFF)
-    let search_regions = [(0x80000usize, 0xA0000usize), (0xE0000usize, 0x100000usize)];
-
+/// Initialize ACPI using an explicit UEFI RSDP physical pointer if provided,
+/// falling back to scanning EBDA and BIOS ROM regions.
+pub fn init_acpi_with_rsdp(phys_mem_offset: VirtAddr, rsdp_phys_override: Option<u64>) {
     let mut found_rsdp: Option<(RsdpDescriptor, u64)> = None;
 
-    for (start, end) in search_regions {
-        let mut cur = start;
-        while cur < end {
-            let virt = phys_mem_offset.as_u64() + cur as u64;
-            let slice = unsafe { core::slice::from_raw_parts(virt as *const u8, 8) };
-            if slice == b"RSD PTR " {
-                let rsdp_slice = unsafe { core::slice::from_raw_parts(virt as *const u8, 20) };
-                if verify_checksum(rsdp_slice) {
-                    let rsdp: RsdpDescriptor = unsafe { read_unaligned(virt as *const RsdpDescriptor) };
-                    found_rsdp = Some((rsdp, cur as u64));
-                    break;
-                }
+    if let Some(phys) = rsdp_phys_override {
+        let virt = phys_mem_offset.as_u64() + phys;
+        let slice = unsafe { core::slice::from_raw_parts(virt as *const u8, 8) };
+        if slice == b"RSD PTR " {
+            let rsdp_slice = unsafe { core::slice::from_raw_parts(virt as *const u8, 20) };
+            if verify_checksum(rsdp_slice) {
+                let rsdp: RsdpDescriptor = unsafe { read_unaligned(virt as *const RsdpDescriptor) };
+                serial_println!("ACPI: Valid RSDP provided by UEFI BootInfo at phys {:#x}", phys);
+                found_rsdp = Some((rsdp, phys));
+            } else {
+                serial_println!("ACPI: Checksum failed for UEFI-provided RSDP at phys {:#x}", phys);
             }
-            cur += 16;
+        } else {
+            serial_println!("ACPI: Signature mismatch for UEFI-provided RSDP at phys {:#x}", phys);
         }
-        if found_rsdp.is_some() {
-            break;
+    }
+
+    if found_rsdp.is_none() {
+        serial_println!("Scanning physical memory for ACPI RSDP descriptor...");
+
+        // Search EBDA (0x80000 - 0x9FFFF) and BIOS ROM (0xE0000 - 0xFFFFF)
+        let search_regions = [(0x80000usize, 0xA0000usize), (0xE0000usize, 0x100000usize)];
+
+        for (start, end) in search_regions {
+            let mut cur = start;
+            while cur < end {
+                let virt = phys_mem_offset.as_u64() + cur as u64;
+                let slice = unsafe { core::slice::from_raw_parts(virt as *const u8, 8) };
+                if slice == b"RSD PTR " {
+                    let rsdp_slice = unsafe { core::slice::from_raw_parts(virt as *const u8, 20) };
+                    if verify_checksum(rsdp_slice) {
+                        let rsdp: RsdpDescriptor = unsafe { read_unaligned(virt as *const RsdpDescriptor) };
+                        found_rsdp = Some((rsdp, cur as u64));
+                        break;
+                    }
+                }
+                cur += 16;
+            }
+            if found_rsdp.is_some() {
+                break;
+            }
         }
     }
 
@@ -196,6 +222,7 @@ pub fn init_acpi(phys_mem_offset: VirtAddr) {
         reset_supported: false,
         reset_port: 0x64,
         reset_val: 0xFE,
+        table_signatures: Vec::new(),
     };
 
     // Parse RSDT or XSDT
@@ -208,7 +235,8 @@ pub fn init_acpi(phys_mem_offset: VirtAddr) {
     for sdt_phys in sdt_tables {
         let virt = phys_mem_offset.as_u64() + sdt_phys;
         let header: SdtHeader = unsafe { read_unaligned(virt as *const SdtHeader) };
-        let sig = core::str::from_utf8(&header.signature).unwrap_or("");
+        let sig = core::str::from_utf8(&header.signature).unwrap_or("????");
+        info.table_signatures.push(String::from(sig));
 
         if sig == "FACP" {
             let fadt: FadtHeader = unsafe { read_unaligned(virt as *const FadtHeader) };

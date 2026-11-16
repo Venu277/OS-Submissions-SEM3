@@ -1,4 +1,5 @@
 use bootloader_api::info::{MemoryRegionKind, MemoryRegions};
+use core::sync::atomic::{AtomicU64, Ordering};
 use x86_64::{
     registers::control::Cr3,
     structures::paging::{
@@ -6,6 +7,17 @@ use x86_64::{
     },
     PhysAddr, VirtAddr,
 };
+
+pub static TOTAL_RAM_BYTES: AtomicU64 = AtomicU64::new(0);
+pub static USABLE_RAM_BYTES: AtomicU64 = AtomicU64::new(0);
+
+/// Query system physical memory metrics: (total_bytes, usable_bytes).
+pub fn system_ram_metrics() -> (u64, u64) {
+    (
+        TOTAL_RAM_BYTES.load(Ordering::Relaxed),
+        USABLE_RAM_BYTES.load(Ordering::Relaxed),
+    )
+}
 
 /// Initialize a new OffsetPageTable given the physical memory offset provided by the bootloader.
 ///
@@ -39,6 +51,18 @@ impl BootInfoFrameAllocator {
     /// The caller must guarantee that the passed memory map is valid. All frames
     /// marked as `Usable` must really be unused.
     pub unsafe fn init(memory_regions: &'static MemoryRegions) -> Self {
+        let mut total = 0u64;
+        let mut usable = 0u64;
+        for r in memory_regions.iter() {
+            let sz = r.end.saturating_sub(r.start);
+            total += sz;
+            if r.kind == MemoryRegionKind::Usable {
+                usable += sz;
+            }
+        }
+        TOTAL_RAM_BYTES.store(total, Ordering::SeqCst);
+        USABLE_RAM_BYTES.store(usable, Ordering::SeqCst);
+
         BootInfoFrameAllocator {
             memory_regions,
             next: 0,

@@ -257,10 +257,16 @@ impl SnapManager {
             }
             "system-monitor" => {
                 output.push_str("System Monitor (Sandboxed via :hardware-observe)\n");
-                output.push_str("  CPU: Intel(R) Core(TM) i5-1335U (10 cores, x86_64)\n");
-                output.push_str("  Kernel Heap: 256 KiB mapped at 0x444444440000\n");
-                output.push_str("  Storage: NVMe 512GB (Profile) + ATA 4MiB (IDE)\n");
-                output.push_str("  Network: eth0 (10.0.2.15/24) + wlan0 (MicroOS-Lab-5G)\n");
+                let cpu = crate::cpu::get_cpu_info();
+                output.push_str(&alloc::format!("  CPU: {} ({} logical cores, {})\n", cpu.brand, cpu.logical_cores, cpu.vendor));
+                let (used, free, total) = crate::allocator::memory_usage();
+                output.push_str(&alloc::format!("  Kernel Heap: {} KiB total ({} KiB used, {} KiB free) mapped at {:#x}\n", total / 1024, used / 1024, free / 1024, crate::allocator::HEAP_START));
+                let (total_ram, usable_ram) = crate::memory::system_ram_metrics();
+                if total_ram > 0 {
+                    output.push_str(&alloc::format!("  System RAM: {} MiB total, {} MiB usable\n", total_ram / (1024 * 1024), usable_ram / (1024 * 1024)));
+                }
+                output.push_str("  Storage: NVMe [SIMULATED] + ATA 4MiB (IDE)\n");
+                output.push_str("  Network: eth0 (emulated) + wlan0 (detected)\n");
             }
             "nano-editor" => {
                 let file = if args.is_empty() { "untitled.txt" } else { args[0] };

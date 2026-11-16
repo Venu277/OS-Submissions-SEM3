@@ -33,7 +33,58 @@ impl PciDevice {
             },
             0x03 => "Display Controller",
             0x06 => "Bridge Device (Host/PCI/ISA)",
+            0x0C => match self.subclass_id {
+                0x03 => "USB Controller",
+                _ => "Serial Bus Controller",
+            },
             _ => "Other Peripheral",
+        }
+    }
+
+    pub fn vendor_name(&self) -> &'static str {
+        match self.vendor_id {
+            0x8086 => "Intel Corporation",
+            0x14C3 => "MediaTek Inc.",
+            0x15B7 => "Western Digital",
+            0x10DE => "NVIDIA Corporation",
+            0x1002 => "AMD / ATI",
+            0x10EC => "Realtek Semiconductor",
+            0x1234 => "QEMU / Bochs Virtual Device",
+            0x1B36 => "Red Hat, Inc. (QEMU)",
+            0x1AF4 => "Red Hat Virtio",
+            _ => "Unknown Vendor",
+        }
+    }
+
+    pub fn device_name(&self) -> &'static str {
+        match (self.vendor_id, self.device_id) {
+            (0x8086, 0x100E) => "82540EM Gigabit Ethernet Controller (QEMU)",
+            (0x8086, 0x1004) => "82543GC Gigabit Ethernet Controller",
+            (0x8086, 0x100F) => "82545EM Gigabit Ethernet Controller",
+            (0x8086, 0x1237) => "440FX - 82441FX PMC [Natoma]",
+            (0x8086, 0x7000) => "82371SB PIIX3 ISA [Natoma/Triton II]",
+            (0x8086, 0x7010) => "82371SB PIIX3 IDE [Natoma/Triton II]",
+            (0x8086, 0x7113) => "82371AB/EB/MB PIIX4 ACPI",
+            (0x8086, 0x2918) => "LPC Interface Controller",
+            (0x8086, 0x29C0) => "82G33/G31/P35/P31 Express DRAM Controller",
+            (0x8086, 0xA7A0)
+            | (0x8086, 0xA7A1)
+            | (0x8086, 0x46A8)
+            | (0x8086, 0x46A6)
+            | (0x8086, 0x4690)
+            | (0x8086, 0x4680) => "Iris Xe Graphics (Raptor Lake / Alder Lake-U)",
+            (0x8086, 0x51ED) | (0x8086, 0x464F) | (0x8086, 0x7A60) => {
+                "Alder Lake PCH USB 3.2 xHCI Host Controller"
+            }
+            (0x14C3, 0x7961) | (0x14C3, 0x7921) | (0x14C3, 0x7922) | (0x14C3, 0x0608) => {
+                "MT7921 / MT7922 Wi-Fi 6 802.11ax PCIe Adapter"
+            }
+            (0x15B7, 0x5041) | (0x15B7, 0x5040) | (0x15B7, 0x5017) | (0x15B7, 0x5030) => {
+                "WD Blue SN5000 / SN580 NVMe SSD"
+            }
+            (0x1234, 0x1111) => "Bochs / QEMU Standard VGA Display Adapter",
+            (0x1B36, 0x0010) => "QEMU PCIe Root Port",
+            _ => self.class_name(),
         }
     }
 }
@@ -79,22 +130,34 @@ pub fn enumerate_pci() -> Vec<PciDevice> {
                 continue;
             }
 
-            let device_id = ((vendor_and_device >> 16) & 0xFFFF) as u16;
-            let class_rev = pci_read_u32(bus, device, 0, 0x08);
-            let class_id = ((class_rev >> 24) & 0xFF) as u8;
-            let subclass_id = ((class_rev >> 16) & 0xFF) as u8;
-            let prog_if = ((class_rev >> 8) & 0xFF) as u8;
+            let header_type_reg = pci_read_u32(bus, device, 0, 0x0C);
+            let is_multi_func = ((header_type_reg >> 16) & 0x80) != 0;
+            let max_func = if is_multi_func { 8 } else { 1 };
 
-            devices.push(PciDevice {
-                bus,
-                device,
-                function: 0,
-                vendor_id,
-                device_id,
-                class_id,
-                subclass_id,
-                prog_if,
-            });
+            for function in 0..max_func {
+                let v_and_d = pci_read_u32(bus, device, function, 0x00);
+                let v_id = (v_and_d & 0xFFFF) as u16;
+                if v_id == 0xFFFF || v_id == 0x0000 {
+                    continue;
+                }
+
+                let device_id = ((v_and_d >> 16) & 0xFFFF) as u16;
+                let class_rev = pci_read_u32(bus, device, function, 0x08);
+                let class_id = ((class_rev >> 24) & 0xFF) as u8;
+                let subclass_id = ((class_rev >> 16) & 0xFF) as u8;
+                let prog_if = ((class_rev >> 8) & 0xFF) as u8;
+
+                devices.push(PciDevice {
+                    bus,
+                    device,
+                    function,
+                    vendor_id: v_id,
+                    device_id,
+                    class_id,
+                    subclass_id,
+                    prog_if,
+                });
+            }
         }
     }
 

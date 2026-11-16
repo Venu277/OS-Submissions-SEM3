@@ -83,6 +83,7 @@ pub fn execute_command(input: &str) {
 
     match command {
         "help" => cmd_help(),
+        "sysinfo" => cmd_sysinfo(),
         "clear" => cmd_clear(),
         "echo" => cmd_echo(&args),
         "uptime" => cmd_uptime(),
@@ -129,6 +130,7 @@ pub fn execute_command(input: &str) {
 fn cmd_help() {
     println!("VenOS Shell - Available Commands:");
     println!("  help                 - Display this list of available commands");
+    println!("  sysinfo              - Display hardware discovery & adaptation summary");
     println!("  clear                - Clear the VGA display buffer");
     println!("  echo <msg>           - Print the given message to screen and serial");
     println!("  uptime               - Display system uptime and timer ticks");
@@ -236,22 +238,24 @@ fn cmd_lspci() {
     serial_println!("PCI: {} device(s) found", devices.len());
     for dev in devices {
         println!(
-            "  [{:02x}:{:02x}.{}] ID {:04x}:{:04x} - {}",
+            "  [{:02x}:{:02x}.{}] ID {:04x}:{:04x} - {} ({})",
             dev.bus,
             dev.device,
             dev.function,
             dev.vendor_id,
             dev.device_id,
-            dev.class_name()
+            dev.device_name(),
+            dev.vendor_name()
         );
         serial_println!(
-            "  [{:02x}:{:02x}.{}] ID {:04x}:{:04x} - {}",
+            "  [{:02x}:{:02x}.{}] ID {:04x}:{:04x} - {} ({})",
             dev.bus,
             dev.device,
             dev.function,
             dev.vendor_id,
             dev.device_id,
-            dev.class_name()
+            dev.device_name(),
+            dev.vendor_name()
         );
     }
 }
@@ -854,6 +858,16 @@ fn cmd_acpi() {
             print!("{}", id);
         }
         println!("]");
+        if !info.table_signatures.is_empty() {
+            print!("  Discovered SDTs:    [");
+            for (i, sig) in info.table_signatures.iter().enumerate() {
+                if i > 0 {
+                    print!(", ");
+                }
+                print!("{}", sig);
+            }
+            println!("]");
+        }
         serial_println!(
             "acpi: OEM='{}', Cores={}, LocalAPIC={:#x}",
             info.oem_id,
@@ -864,6 +878,114 @@ fn cmd_acpi() {
         println!("acpi: No ACPI tables detected.");
         serial_println!("acpi: No ACPI tables detected.");
     }
+}
+
+fn cmd_sysinfo() {
+    println!("==================================================");
+    println!("   VenOS Hardware Discovery & System Topology");
+    println!("==================================================");
+
+    // 1. UEFI GOP Display Framebuffer
+    if let Some((w, h, stride, aspect, cols, rows, font_scale, fmt_name)) =
+        crate::framebuffer::display_summary()
+    {
+        println!("Display (UEFI GOP Framebuffer):");
+        println!("  Resolution:         {}x{} (stride: {})", w, h, stride);
+        println!("  Aspect Ratio:       {}", aspect);
+        println!(
+            "  Console Grid:       {} cols x {} rows (font scale: {}x)",
+            cols, rows, font_scale
+        );
+        println!("  Pixel Format:       {}", fmt_name);
+    } else {
+        println!("Display:              VGA Text Buffer (0xb8000 fallback)");
+    }
+
+    // 2. CPU Topology & Frequency
+    let cpu = crate::cpu::get_cpu_info();
+    let freq_mhz = BOOT_TIME_FREQ_MHZ.load(Ordering::Relaxed);
+    println!("Processor (CPU):");
+    println!("  Model Name:         {}", cpu.brand);
+    println!("  Vendor:             {}", cpu.vendor);
+    println!("  Logical Cores:      {}", cpu.logical_cores);
+    println!("  Calibrated TSC:     {} MHz", freq_mhz);
+    println!(
+        "  Address Widths:     {} physical / {} virtual",
+        cpu.phys_addr_bits, cpu.virt_addr_bits
+    );
+
+    // 3. Memory & Kernel Heap
+    let (ram_total, ram_usable) = crate::memory::system_ram_metrics();
+    let (heap_used, heap_free, heap_total) = crate::allocator::memory_usage();
+    println!("System Memory (RAM):");
+    if ram_total > 0 {
+        println!(
+            "  Total RAM:          {} MiB ({} bytes)",
+            ram_total / (1024 * 1024),
+            ram_total
+        );
+        println!(
+            "  Usable RAM:         {} MiB ({} bytes)",
+            ram_usable / (1024 * 1024),
+            ram_usable
+        );
+    } else {
+        println!("  RAM Mapping:        Standard Bootloader Map");
+    }
+    println!(
+        "  Kernel Heap:        {} KiB (used: {} KiB, free: {} KiB) @ {:#x}",
+        heap_total / 1024,
+        heap_used / 1024,
+        heap_free / 1024,
+        crate::allocator::HEAP_START
+    );
+
+    // 4. ACPI Subsystem
+    let acpi_lock = crate::acpi::ACPI_INFO.lock();
+    if let Some(ref acpi) = *acpi_lock {
+        println!("ACPI Power & Subsystem Topology:");
+        println!(
+            "  RSDP Pointer:       Phys {:#x} (Revision {})",
+            acpi.rsdp_phys, acpi.revision
+        );
+        println!("  OEM ID:             {}", acpi.oem_id);
+        println!(
+            "  Local APIC Base:    {:#x} ({} cores found)",
+            acpi.local_apic_addr, acpi.num_cpu_cores
+        );
+        if !acpi.table_signatures.is_empty() {
+            print!("  Discovered Tables:  [");
+            for (i, sig) in acpi.table_signatures.iter().enumerate() {
+                if i > 0 {
+                    print!(", ");
+                }
+                print!("{}", sig);
+            }
+            println!("]");
+        }
+    } else {
+        println!("ACPI:                 Not Initialized");
+    }
+    drop(acpi_lock);
+
+    // 5. PCI Devices
+    let pci_devs = crate::pci::enumerate_pci();
+    println!("PCI Devices Discovered: {}", pci_devs.len());
+    for dev in &pci_devs {
+        println!(
+            "  [{:02x}:{:02x}.{}] {:04x}:{:04x} - {} ({})",
+            dev.bus,
+            dev.device,
+            dev.function,
+            dev.vendor_id,
+            dev.device_id,
+            dev.device_name(),
+            dev.vendor_name()
+        );
+    }
+
+    println!("==================================================");
+    serial_println!("Shell command 'sysinfo' executed.");
 }
 
 fn cmd_nvme(args: &[&str]) {

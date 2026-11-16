@@ -30,10 +30,13 @@
 | **Step A1** | **CA-6 Core Build Mode (`ca6-core` / clean scheduler baseline)** | **190.479 ms** | **~1.3 s** | Ready | **Dynamic PIT Ch2 calibrated TSC (@ 2495 MHz)** | 2026-11-15 |
 | **Step V0** | **Read-Only System Audit & CA-6 Gap Analysis** | **190.479 ms** | **~1.3 s** | Ready | **Baseline QEMU/SeaBIOS run** | 2026-11-16 |
 | **Step V1** | **UEFI Boot (`bootloader 0.11`) & GOP Framebuffer Console** | **577.672 ms** | **~2.1 s** | — | **QEMU/OVMF (EDK2 x86_64, TSC @ 2502 MHz, 1.445G ticks)** | 2026-11-16 |
+| **Step V2** | **Native Hardware Discovery & Adaptation (GOP ratio, RAM, adaptive heap, UEFI ACPI, PCI names, sysinfo)** | **827.375 ms** | **~2.2 s** | — | **QEMU/OVMF (EDK2 x86_64, TSC @ 2490 MHz, 2.060G ticks)** | 2026-11-16 |
 
 ---
 
 ## Notes
+
+- In Step V2, hardware discovery dynamically classifies the display aspect ratio (e.g. 16:10 / 16:9), computes usable system RAM across all bootloader memory regions, sizes the kernel heap adaptively (clamped 256 KiB to 4 MiB, 1724 KiB allocated in test run), consumes the UEFI-provided ACPI RSDP physical address (`boot_info.rsdp_addr`), enriches PCI enumeration with vendor and friendly device names across all 256 buses, and replaces hardcoded laptop profiles with truthful hardware queries. Boot time to shell prompt: **827.375 ms** (calibrated @ 2490 MHz, raw trace: `traces/step_v2_hw_discovery.log`).
 
 - In Step 3, the boot time was measured from raw CPU power-on (`_start`) through CPU initialization, GDT/TSS, IDT, PIC, paging, 100 KiB heap setup, and task executor instantiation directly to the appearance of the interactive `micro_os> ` prompt.
 - Time from CPU reset to an active interactive shell prompt is just **54.3 ms**!

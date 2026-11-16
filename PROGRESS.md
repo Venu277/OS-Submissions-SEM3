@@ -10,6 +10,19 @@
 
 ## What Is Done
 
+### Step V2: Native Hardware Discovery & Dynamic System Adaptation ✅
+- **Display Resolution & Aspect Ratio:** Implemented `AspectRatio` classification in `src/framebuffer.rs` using Euclidean `gcd()`. Automatically derives 16:10 (1920x1200 host laptop, 1280x800 QEMU), 16:9, 4:3, 5:4, and 3:2; derives console text grid dimensions and auto-scales fonts for ultra HiDPI.
+- **Physical Memory Accounting:** Added atomic physical RAM metrics (`src/memory.rs`) tracking total and usable RAM across all bootloader memory map segments.
+- **Adaptive Kernel Heap:** Implemented dynamic heap calculation in `src/allocator.rs` ($1/64$th of usable RAM, clamped 256 KiB..4 MiB). Dynamically maps page tables during early boot (allocated 1724 KiB on test run vs static 256 KiB).
+- **Direct UEFI ACPI Handover:** Enhanced `src/acpi.rs` with `init_acpi_with_rsdp()` to directly consume `boot_info.rsdp_addr`, eliminating legacy BIOS EBDA scanning on UEFI Class 3 firmware. Enumerate all SDT signatures (`table_signatures`) into `AcpiInfo`.
+- **Expanded PCI Enumeration & Friendly Names:** Expanded `src/pci.rs` to scan all 256 buses (`0..=255`) and multi-function devices (`0..8`). Added vendor and device friendly name lookup for Intel Iris Xe, MediaTek MT7921, Intel xHCI, and WD NVMe.
+- **Truthful Hardware Representation:** Labeled simulated NVMe device as `"VenOS NVMe RAM Block Device [SIMULATED (Software Model)]"`. Dynamically queried CPUID, RAM, and heap in Snap store's `system-monitor`.
+- **System Information Shell Command:** Added `sysinfo` command in `src/shell.rs` outputting GOP framebuffer, CPU, RAM, heap, ACPI, and PCI hardware state. Enriched `lspci` and `acpi` shell commands.
+- **Repeatable Integration Test:** Created `tests/hardware_adaptation.rs` verifying aspect ratio logic, adaptive heap boundary clamping, and PCI metadata lookups. All tests pass (`[ok]`).
+- **Live QEMU/OVMF Verification:** Boot time to shell recorded at **827.375 ms** (calibrated @ 2490 MHz). Captured execution trace in `traces/step_v2_hw_discovery.log`.
+- **Bare-Metal Verification:** User flashed `target/venos-uefi.img` with Rufus in DD mode, disabled Secure Boot, and verified successful boot and graphical text console on real laptop hardware.
+- **Step V2 Documentation:** Authored `docs/STEP_V02_hardware_discovery.md` and updated `BOOT_TIMES.md`.
+
 ### Step V1: UEFI Boot & Framebuffer Console ✅
 - **UEFI Migration:** Migrated kernel boot to pure 64-bit UEFI via `bootloader_api 0.11.17` using `BootloaderConfig` (dynamic physical memory mapping and native GOP framebuffer handover).
 - **Host Image Generator:** Created host CLI crate `builder/` with `bootloader = "0.11.17"` generating valid FAT32 GPT UEFI disk images (`target/venos-uefi.img`, 11.6 MB) containing `\EFI\BOOT\BOOTX64.EFI`.

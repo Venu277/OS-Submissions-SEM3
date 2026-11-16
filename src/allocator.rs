@@ -2,7 +2,7 @@ pub mod bump;
 pub mod linked_list;
 
 use core::alloc::{GlobalAlloc, Layout};
-use core::sync::atomic::{AtomicBool, Ordering};
+use core::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use bump::BumpAllocator;
 use linked_list::LinkedListAllocator;
 use spin::Mutex;
@@ -15,11 +15,27 @@ use x86_64::{
 
 extern crate alloc;
 
-
 /// Start address of the kernel heap.
 pub const HEAP_START: usize = 0x_4444_4444_0000;
-/// Size of the kernel heap: 256 KiB.
-pub const HEAP_SIZE: usize = 256 * 1024;
+/// Minimum heap size: 256 KiB.
+pub const MIN_HEAP_SIZE: usize = 256 * 1024;
+/// Maximum adaptive heap size: 4 MiB.
+pub const MAX_HEAP_SIZE: usize = 4 * 1024 * 1024;
+/// Baseline default heap size: 256 KiB.
+pub const HEAP_SIZE: usize = MIN_HEAP_SIZE;
+/// Actual initialized heap size in bytes.
+pub static HEAP_ACTUAL_SIZE: AtomicUsize = AtomicUsize::new(HEAP_SIZE);
+
+/// Dynamically determine an appropriate kernel heap size based on available system RAM.
+///
+/// Allocates 1/64th of usable RAM, clamped between MIN_HEAP_SIZE (256 KiB) and MAX_HEAP_SIZE (4 MiB).
+pub fn calculate_adaptive_heap_size(usable_ram_bytes: u64) -> usize {
+    if usable_ram_bytes == 0 {
+        return MIN_HEAP_SIZE;
+    }
+    let target = (usable_ram_bytes / 64) as usize;
+    target.clamp(MIN_HEAP_SIZE, MAX_HEAP_SIZE)
+}
 
 /// Global flag controlling structured allocation trace emission (Layer 2 & Layer 8).
 pub static ALLOC_TRACING_ENABLED: AtomicBool = AtomicBool::new(false);
@@ -71,14 +87,17 @@ unsafe impl GlobalAlloc for Locked<LinkedListAllocator> {
 #[global_allocator]
 static ALLOCATOR: Locked<LinkedListAllocator> = Locked::new(LinkedListAllocator::new());
 
-/// Map heap virtual memory pages to physical frames and initialize the heap allocator.
-pub fn init_heap(
+/// Map heap virtual memory pages to physical frames and initialize the heap allocator
+/// with a customized or adaptive heap size.
+pub fn init_heap_adaptive(
     mapper: &mut impl Mapper<Size4KiB>,
     frame_allocator: &mut impl FrameAllocator<Size4KiB>,
+    heap_size: usize,
 ) -> Result<(), MapToError<Size4KiB>> {
+    let aligned_size = (heap_size + 4095) & !4095;
     let page_range = {
         let heap_start = VirtAddr::new(HEAP_START as u64);
-        let heap_end = heap_start + HEAP_SIZE - 1u64;
+        let heap_end = heap_start + aligned_size - 1u64;
         let heap_start_page = Page::containing_address(heap_start);
         let heap_end_page = Page::containing_address(heap_end);
         Page::range_inclusive(heap_start_page, heap_end_page)
@@ -95,16 +114,25 @@ pub fn init_heap(
     }
 
     unsafe {
-        ALLOCATOR.lock().init(HEAP_START, HEAP_SIZE);
+        ALLOCATOR.lock().init(HEAP_START, aligned_size);
     }
 
+    HEAP_ACTUAL_SIZE.store(aligned_size, Ordering::SeqCst);
     Ok(())
+}
+
+/// Map heap virtual memory pages to physical frames and initialize the heap allocator with baseline size.
+pub fn init_heap(
+    mapper: &mut impl Mapper<Size4KiB>,
+    frame_allocator: &mut impl FrameAllocator<Size4KiB>,
+) -> Result<(), MapToError<Size4KiB>> {
+    init_heap_adaptive(mapper, frame_allocator, HEAP_SIZE)
 }
 
 /// Returns (used_bytes, free_bytes, total_bytes) of the kernel heap.
 pub fn memory_usage() -> (usize, usize, usize) {
     let free = ALLOCATOR.lock().free_memory();
-    let total = HEAP_SIZE;
+    let total = HEAP_ACTUAL_SIZE.load(Ordering::Relaxed);
     let used = total.saturating_sub(free);
     (used, free, total)
 }

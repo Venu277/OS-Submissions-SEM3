@@ -111,3 +111,7 @@ harness = false
 [[test]]
 name = "allocator_benchmark"
 harness = false
+
+[[test]]
+name = "hardware_adaptation"
+harness = false

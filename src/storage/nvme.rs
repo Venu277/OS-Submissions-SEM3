@@ -113,12 +113,12 @@ impl NvmeDevice {
     pub fn new_laptop_profile() -> Self {
         NvmeDevice {
             info: NvmeInfo {
-                model: "MicroOS NVMe 512GB PCIe Gen4 SSD (Intel i5-1335U)".to_owned(),
-                serial: "NVME-MICROOS-2026-X1".to_owned(),
+                model: "VenOS NVMe RAM Block Device [SIMULATED (Software Model)]".to_owned(),
+                serial: "NVME-VENOS-SIM-2026".to_owned(),
                 firmware: "1B2QGXA7".to_owned(),
                 version_major: 1,
                 version_minor: 4,
-                total_sectors: 1_000_000_000, // ~512 GB
+                total_sectors: 1_000_000_000, // ~512 GB simulated
                 sector_size: 512,
                 is_hardware: false,
             },

@@ -52,16 +52,35 @@ fn kernel_main(boot_info: &'static mut bootloader_api::BootInfo) -> ! {
     let mut frame_allocator =
         unsafe { micro_os::memory::BootInfoFrameAllocator::init(&boot_info.memory_regions) };
 
-    micro_os::allocator::init_heap(&mut mapper, &mut frame_allocator)
+    let (_total_ram, usable_ram) = micro_os::memory::system_ram_metrics();
+    let adaptive_heap_sz = micro_os::allocator::calculate_adaptive_heap_size(usable_ram);
+    micro_os::allocator::init_heap_adaptive(&mut mapper, &mut frame_allocator, adaptive_heap_sz)
         .expect("Kernel heap initialization failed");
+
+    // Print hardware discovery summary to display console
+    if let Some((w, h, _, aspect, cols, rows, font_scale, _)) = micro_os::framebuffer::display_summary() {
+        println!("Display: {}x{} [{}], {}x{} text grid ({}x scale)", w, h, aspect, cols, rows, font_scale);
+    }
+    let cpu_info = micro_os::cpu::get_cpu_info();
+    let (ram_total, ram_usable) = micro_os::memory::system_ram_metrics();
+    println!("CPU: {} ({} logical cores)", cpu_info.brand, cpu_info.logical_cores);
+    if ram_total > 0 {
+        println!(
+            "Memory: {} MiB total, {} MiB usable (Kernel Heap: {} KiB)",
+            ram_total / (1024 * 1024),
+            ram_usable / (1024 * 1024),
+            adaptive_heap_sz / 1024
+        );
+    }
 
     #[cfg(not(feature = "ca6-core"))]
     {
         // 5. Initialize ACPI Subsystem
-        if let Some(rsdp_addr) = boot_info.rsdp_addr.into_option() {
+        let rsdp_opt = boot_info.rsdp_addr.into_option();
+        if let Some(rsdp_addr) = rsdp_opt {
             micro_os::serial_println!("UEFI: ACPI RSDP table provided at physical {:#x}", rsdp_addr);
         }
-        micro_os::acpi::init_acpi(phys_mem_offset);
+        micro_os::acpi::init_acpi_with_rsdp(phys_mem_offset, rsdp_opt);
 
         // 6. Initialize Storage & File System (ATA probe, NVMe probe, MicroFS mount)
         micro_os::init_storage();
