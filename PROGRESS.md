@@ -10,6 +10,15 @@
 
 ## What Is Done
 
+### Step V4: Self-Written Allocator Verification & Layer 8 Hardening ✅
+- **Self-Written Allocators:** Verified hand-written intrusive singly-linked list allocator (`src/allocator/linked_list.rs`) and sequential bump allocator (`src/allocator/bump.rs`) with zero external crate dependencies.
+- **Dual-Bootloader Physical Frame Allocation:** Implemented `IntoFrameSource` trait and `FrameSource` enum in `src/memory.rs`, enabling `BootInfoFrameAllocator` to seamlessly accept both modern UEFI `MemoryRegions` and legacy BIOS `MemoryMap` across tests and live boot.
+- **Empirical 100-Block Benchmark:** Verified latency and fragmentation comparison: Linked List avg latency = 12,286 CPU cycles; Bump allocator avg latency = 2,424 CPU cycles (5.07x faster); Memory reclamation after freeing 50% = 9,920 Bytes reused in Linked List vs 0 Bytes in Bump.
+- **Graceful OOM Handling:** Verified both allocators return `null_mut()` on oversized requests without panicking or triggering kernel page faults.
+- **Repeatable Integration Tests:** Verified `tests/heap_allocation.rs` and `tests/allocator_benchmark.rs` in QEMU with all subtests passing (`[ok]`).
+- **Live QEMU/OVMF Verification:** Boot time to shell recorded at **559.001 ms** (calibrated @ 2498 MHz) with adaptive kernel heap mapped at 1720 KiB. Captured execution trace in `traces/step_v4_memory_allocator.log`.
+- **Documentation:** Authored `docs/STEP_V04_memory_allocator.md` and updated `BOOT_TIMES.md`.
+
 ### Step V3: Input Subsystem, Structured Logging & Trace Ring Buffer ✅
 - **Input Pipeline Verification:** Verified PS/2 keyboard controller (i8042) interrupt handling on IRQ 1 (vector 33), atomic SPSC lock-free scancode queue (`ScancodeQueue`), and async task wakeup for HP laptop EC keyboard emulation (`ACPI\HPQ8001`).
 - **In-Kernel Trace Ring Buffer:** Implemented `TraceRingBuffer` in `src/diagnostics.rs` storing 512 compact `TraceRecord` structures in kernel BSS without heap allocation. Supports FIFO wrap-around overwrite and zero-allocation inspection via `copy_to_slice()`.

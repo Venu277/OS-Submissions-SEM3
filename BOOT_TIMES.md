@@ -32,10 +32,13 @@
 | **Step V1** | **UEFI Boot (`bootloader 0.11`) & GOP Framebuffer Console** | **577.672 ms** | **~2.1 s** | — | **QEMU/OVMF (EDK2 x86_64, TSC @ 2502 MHz, 1.445G ticks)** | 2026-11-16 |
 | **Step V2** | **Native Hardware Discovery & Adaptation (GOP ratio, RAM, adaptive heap, UEFI ACPI, PCI names, sysinfo)** | **827.375 ms** | **~2.2 s** | — | **QEMU/OVMF (EDK2 x86_64, TSC @ 2490 MHz, 2.060G ticks)** | 2026-11-16 |
 | **Step V3** | **Input Subsystem, Diagnostics & In-Kernel Trace Ring Buffer (512-record BSS buffer, dmesg, parse_trace.py)** | **716.322 ms** | **~2.1 s** | — | **QEMU/OVMF (EDK2 x86_64, TSC @ 2500 MHz, 1.791G ticks)** | 2026-11-16 |
+| **Step V4** | **Self-Written Allocator Verification & Layer 8 Hardening (Intrusive LL vs Bump, Dual Bootloader Map)** | **559.001 ms** | **~2.0 s** | — | **QEMU/OVMF (EDK2 x86_64, TSC @ 2498 MHz, 1.396G ticks)** | 2026-11-16 |
 
 ---
 
 ## Notes
+
+- In Step V4, the memory allocation subsystem was verified across both self-written allocators (intrusive linked list vs sequential bump). Unified `BootInfoFrameAllocator` with `IntoFrameSource` accepts both UEFI memory regions and legacy BIOS maps across all tests. Benchmark recorded linked list average latency at 12,286 cycles and 9,920 B reclaimed after 50% deallocation. Boot time to shell prompt: **559.001 ms** (calibrated @ 2498 MHz, raw trace: `traces/step_v4_memory_allocator.log`).
 
 - In Step V3, dual-channel diagnostic logging dispatches structured events to both UART serial port 0x3F8 and an in-memory 512-entry static circular ring buffer (`TraceRingBuffer`) in kernel BSS with zero heap allocation. The `dmesg` / `trace` shell command allows live trace inspection. Python trace analysis suite (`scripts/parse_trace.py`) parses logs and produces CSV summaries, JSON metrics, and Matplotlib evaluation plots. Boot time to shell prompt: **716.322 ms** (calibrated @ 2500 MHz, raw trace: `traces/step_v3_input_logging.log`).
 

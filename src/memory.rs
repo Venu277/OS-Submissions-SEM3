@@ -38,50 +38,104 @@ unsafe fn active_level_4_table(physical_memory_offset: VirtAddr) -> &'static mut
     &mut *page_table_ptr
 }
 
-/// A FrameAllocator that returns usable frames from the bootloader's memory map.
+/// Source of physical memory regions: UEFI or legacy BIOS.
+#[derive(Clone, Copy)]
+pub enum FrameSource {
+    Uefi(&'static MemoryRegions),
+    Bios(&'static bootloader::bootinfo::MemoryMap),
+}
+
+/// Trait converting various bootloader memory maps into a uniform `FrameSource`.
+pub trait IntoFrameSource {
+    fn into_source(self) -> FrameSource;
+}
+
+impl IntoFrameSource for &'static MemoryRegions {
+    fn into_source(self) -> FrameSource {
+        FrameSource::Uefi(self)
+    }
+}
+
+impl IntoFrameSource for &'static bootloader::bootinfo::MemoryMap {
+    fn into_source(self) -> FrameSource {
+        FrameSource::Bios(self)
+    }
+}
+
+/// A FrameAllocator that returns usable frames from either UEFI MemoryRegions or BIOS MemoryMap.
 pub struct BootInfoFrameAllocator {
-    memory_regions: &'static MemoryRegions,
+    source: FrameSource,
     next: usize,
 }
 
 impl BootInfoFrameAllocator {
-    /// Create a FrameAllocator from the passed memory regions.
+    /// Create a FrameAllocator from the passed memory map or regions.
     ///
     /// # Safety
     /// The caller must guarantee that the passed memory map is valid. All frames
     /// marked as `Usable` must really be unused.
-    pub unsafe fn init(memory_regions: &'static MemoryRegions) -> Self {
-        let mut total = 0u64;
-        let mut usable = 0u64;
-        for r in memory_regions.iter() {
-            let sz = r.end.saturating_sub(r.start);
-            total += sz;
-            if r.kind == MemoryRegionKind::Usable {
-                usable += sz;
+    pub unsafe fn init<T: IntoFrameSource>(map: T) -> Self {
+        let source = map.into_source();
+        match source {
+            FrameSource::Uefi(memory_regions) => {
+                let mut total = 0u64;
+                let mut usable = 0u64;
+                for r in memory_regions.iter() {
+                    let sz = r.end.saturating_sub(r.start);
+                    total += sz;
+                    if r.kind == MemoryRegionKind::Usable {
+                        usable += sz;
+                    }
+                }
+                TOTAL_RAM_BYTES.store(total, Ordering::SeqCst);
+                USABLE_RAM_BYTES.store(usable, Ordering::SeqCst);
+            }
+            FrameSource::Bios(memory_map) => {
+                let mut total = 0u64;
+                let mut usable = 0u64;
+                for r in memory_map.iter() {
+                    let sz = r.range.end_addr().saturating_sub(r.range.start_addr());
+                    total += sz;
+                    if r.region_type == bootloader::bootinfo::MemoryRegionType::Usable {
+                        usable += sz;
+                    }
+                }
+                TOTAL_RAM_BYTES.store(total, Ordering::SeqCst);
+                USABLE_RAM_BYTES.store(usable, Ordering::SeqCst);
             }
         }
-        TOTAL_RAM_BYTES.store(total, Ordering::SeqCst);
-        USABLE_RAM_BYTES.store(usable, Ordering::SeqCst);
 
         BootInfoFrameAllocator {
-            memory_regions,
+            source,
             next: 0,
         }
-    }
-
-    /// Returns an iterator over the usable frames specified in the memory map.
-    fn usable_frames(&self) -> impl Iterator<Item = PhysFrame> {
-        let regions = self.memory_regions.iter();
-        let usable_regions = regions.filter(|r| r.kind == MemoryRegionKind::Usable);
-        let addr_ranges = usable_regions.map(|r| r.start..r.end);
-        let frame_addresses = addr_ranges.flat_map(|r| (r.start as usize..r.end as usize).step_by(4096));
-        frame_addresses.map(|addr| PhysFrame::containing_address(PhysAddr::new(addr as u64)))
     }
 }
 
 unsafe impl FrameAllocator<Size4KiB> for BootInfoFrameAllocator {
     fn allocate_frame(&mut self) -> Option<PhysFrame> {
-        let frame = self.usable_frames().nth(self.next);
+        let frame = match self.source {
+            FrameSource::Uefi(regions) => {
+                let usable_regions = regions.iter().filter(|r| r.kind == MemoryRegionKind::Usable);
+                let addr_ranges = usable_regions.map(|r| r.start..r.end);
+                let frame_addresses =
+                    addr_ranges.flat_map(|r| (r.start as usize..r.end as usize).step_by(4096));
+                frame_addresses
+                    .map(|addr| PhysFrame::containing_address(PhysAddr::new(addr as u64)))
+                    .nth(self.next)
+            }
+            FrameSource::Bios(map) => {
+                let usable_regions = map
+                    .iter()
+                    .filter(|r| r.region_type == bootloader::bootinfo::MemoryRegionType::Usable);
+                let addr_ranges = usable_regions.map(|r| r.range.start_addr()..r.range.end_addr());
+                let frame_addresses =
+                    addr_ranges.flat_map(|r| (r.start as usize..r.end as usize).step_by(4096));
+                frame_addresses
+                    .map(|addr| PhysFrame::containing_address(PhysAddr::new(addr as u64)))
+                    .nth(self.next)
+            }
+        };
         self.next += 1;
         frame
     }
