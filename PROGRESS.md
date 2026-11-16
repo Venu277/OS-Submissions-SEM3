@@ -10,6 +10,14 @@
 
 ## What Is Done
 
+### Step V5: Task Representation & Ready Queue (CA-6 Layers 4 & 5) ✅
+- **Task Representation (`KThread`):** Verified `KThread` with monotonic `ThreadId`, four-state lifecycle model (`Ready`, `Running`, `Blocked`, `Terminated`), and `CpuContext` (r15, r14, r13, r12, rbx, rbp, rsp, rflags, rip) conforming to System V AMD64 ABI.
+- **Stack Allocation & Stack Canary Guard:** Verified 16 KiB dedicated stack allocation with `0xCA60_DEAD_BEEF_0001` stack canary guard at stack base, detecting and halting stack overflows.
+- **Thread-Safe Ready Queue:** Verified `ReadyQueue` FIFO ordering, `enqueue`, `dequeue`, `remove`, and state transition validation (`transition_to()`).
+- **TC1–TC6 Test Suite Verification:** Executed `tests/kthread_ready_queue.rs` in QEMU: TC1 (Two Tasks), TC2 (3-5 Tasks), TC3 (Boundary Cases), TC4 (Stress 50 Tasks), TC5 (Failure Cases: illegal transitions & corrupted canary), and TC6 (Repeatability: 10 cycles). All 6 test cases passed 100% (`[ok]`).
+- **Live QEMU/OVMF Verification:** Boot time to shell recorded at **560.011 ms** (calibrated @ 2498 MHz). Captured execution trace in `traces/step_v5_task_ready_queue.log`.
+- **Documentation:** Authored `docs/STEP_V05_task_ready_queue.md` and updated `BOOT_TIMES.md`.
+
 ### Step V4: Self-Written Allocator Verification & Layer 8 Hardening ✅
 - **Self-Written Allocators:** Verified hand-written intrusive singly-linked list allocator (`src/allocator/linked_list.rs`) and sequential bump allocator (`src/allocator/bump.rs`) with zero external crate dependencies.
 - **Dual-Bootloader Physical Frame Allocation:** Implemented `IntoFrameSource` trait and `FrameSource` enum in `src/memory.rs`, enabling `BootInfoFrameAllocator` to seamlessly accept both modern UEFI `MemoryRegions` and legacy BIOS `MemoryMap` across tests and live boot.

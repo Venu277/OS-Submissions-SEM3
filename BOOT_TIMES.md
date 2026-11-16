@@ -33,10 +33,13 @@
 | **Step V2** | **Native Hardware Discovery & Adaptation (GOP ratio, RAM, adaptive heap, UEFI ACPI, PCI names, sysinfo)** | **827.375 ms** | **~2.2 s** | — | **QEMU/OVMF (EDK2 x86_64, TSC @ 2490 MHz, 2.060G ticks)** | 2026-11-16 |
 | **Step V3** | **Input Subsystem, Diagnostics & In-Kernel Trace Ring Buffer (512-record BSS buffer, dmesg, parse_trace.py)** | **716.322 ms** | **~2.1 s** | — | **QEMU/OVMF (EDK2 x86_64, TSC @ 2500 MHz, 1.791G ticks)** | 2026-11-16 |
 | **Step V4** | **Self-Written Allocator Verification & Layer 8 Hardening (Intrusive LL vs Bump, Dual Bootloader Map)** | **559.001 ms** | **~2.0 s** | — | **QEMU/OVMF (EDK2 x86_64, TSC @ 2498 MHz, 1.396G ticks)** | 2026-11-16 |
+| **Step V5** | **Task Representation & Ready Queue (KThread, CpuContext, 16K Stack + Canary, TC1-TC6)** | **560.011 ms** | **~2.0 s** | — | **QEMU/OVMF (EDK2 x86_64, TSC @ 2498 MHz, 1.399G ticks)** | 2026-11-16 |
 
 ---
 
 ## Notes
+
+- In Step V5, kernel thread representations (`KThread`, `ThreadId`, `ThreadState`, `CpuContext`, `ReadyQueue`) and stack canary overflow guards were verified across TC1 through TC6. Boot time to shell prompt: **560.011 ms** (calibrated @ 2498 MHz, raw trace: `traces/step_v5_task_ready_queue.log`).
 
 - In Step V4, the memory allocation subsystem was verified across both self-written allocators (intrusive linked list vs sequential bump). Unified `BootInfoFrameAllocator` with `IntoFrameSource` accepts both UEFI memory regions and legacy BIOS maps across all tests. Benchmark recorded linked list average latency at 12,286 cycles and 9,920 B reclaimed after 50% deallocation. Boot time to shell prompt: **559.001 ms** (calibrated @ 2498 MHz, raw trace: `traces/step_v4_memory_allocator.log`).
 
