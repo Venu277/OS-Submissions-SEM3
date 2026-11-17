@@ -384,6 +384,15 @@ extern "x86-interrupt" fn timer_interrupt_handler(_stack_frame: InterruptStackFr
         }
     }
 
+    // Wake console input stream if serial byte is waiting
+    unsafe {
+        let mut line_sts: x86_64::instructions::port::PortReadOnly<u8> =
+            x86_64::instructions::port::PortReadOnly::new(0x3FD);
+        if (line_sts.read() & 0x01) != 0 {
+            crate::task::keyboard::wake_keyboard_task();
+        }
+    }
+
     // CA-6 Layer 6: Timer-driven preemptive scheduling
     crate::scheduler::timer_tick();
 }
