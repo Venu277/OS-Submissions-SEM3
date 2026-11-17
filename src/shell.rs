@@ -4,9 +4,7 @@ use alloc::vec;
 use alloc::vec::Vec;
 use core::sync::atomic::{AtomicU64, Ordering};
 use crate::fs::vfs::VFS;
-use crate::task::keyboard::ScancodeStream;
 use crate::{print, println, serial_print, serial_println};
-use pc_keyboard::{layouts, DecodedKey, HandleControl, Keyboard, ScancodeSet1};
 
 pub static BOOT_TIME_MS: AtomicU64 = AtomicU64::new(0);
 pub static BOOT_TIME_US: AtomicU64 = AtomicU64::new(0);
@@ -25,54 +23,42 @@ pub fn print_prompt() {
     serial_print!("venos:{}> ", prompt_str);
 }
 
-/// Asynchronous interactive shell loop.
+/// Asynchronous interactive shell loop supporting both PS/2 keyboard and UART serial.
 pub async fn run_shell() {
-    let mut keyboard = Keyboard::new(
-        ScancodeSet1::new(),
-        layouts::Us104Key,
-        HandleControl::Ignore,
-    );
-    let scancodes = ScancodeStream::new();
+    let mut input = crate::task::keyboard::InputStream::new();
     let mut line_buffer = String::new();
 
     print_prompt();
     crate::framebuffer::set_cursor_visible(true);
 
     loop {
-        let scancode = scancodes.next_scancode().await;
-        if let Ok(Some(key_event)) = keyboard.add_byte(scancode) {
-            if let Some(key) = keyboard.process_keyevent(key_event) {
-                match key {
-                    DecodedKey::Unicode(c) => match c {
-                        '\n' | '\r' => {
-                            crate::framebuffer::set_cursor_visible(false);
-                            println!();
-                            serial_println!();
-                            execute_command(&line_buffer);
-                            line_buffer.clear();
-                            print_prompt();
-                            crate::framebuffer::set_cursor_visible(true);
-                        }
-                        '\x08' => {
-                            // Backspace
-                            if !line_buffer.is_empty() {
-                                crate::framebuffer::set_cursor_visible(false);
-                                line_buffer.pop();
-                                print!("\x08");
-                                serial_print!("\x08 \x08");
-                                crate::framebuffer::set_cursor_visible(true);
-                            }
-                        }
-                        c => {
-                            crate::framebuffer::set_cursor_visible(false);
-                            line_buffer.push(c);
-                            print!("{}", c);
-                            serial_print!("{}", c);
-                            crate::framebuffer::set_cursor_visible(true);
-                        }
-                    },
-                    DecodedKey::RawKey(_) => {}
+        let c = input.next_char().await;
+        match c {
+            '\n' | '\r' => {
+                crate::framebuffer::set_cursor_visible(false);
+                println!();
+                serial_println!();
+                execute_command(&line_buffer);
+                line_buffer.clear();
+                print_prompt();
+                crate::framebuffer::set_cursor_visible(true);
+            }
+            '\x08' => {
+                // Backspace
+                if !line_buffer.is_empty() {
+                    crate::framebuffer::set_cursor_visible(false);
+                    line_buffer.pop();
+                    print!("\x08");
+                    serial_print!("\x08 \x08");
+                    crate::framebuffer::set_cursor_visible(true);
                 }
+            }
+            c => {
+                crate::framebuffer::set_cursor_visible(false);
+                line_buffer.push(c);
+                print!("{}", c);
+                serial_print!("{}", c);
+                crate::framebuffer::set_cursor_visible(true);
             }
         }
     }

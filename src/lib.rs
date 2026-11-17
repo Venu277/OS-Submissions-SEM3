@@ -40,7 +40,15 @@ pub mod vga_buffer;
 pub fn init() {
     gdt::init();
     interrupts::init_idt();
-    unsafe { interrupts::PICS.lock().initialize() };
+    unsafe {
+        interrupts::PICS.lock().initialize();
+        // Explicitly unmask PIC interrupts:
+        // Under UEFI firmware, the PIC masks are initialized to 0xFF (all masked).
+        // We MUST explicitly unmask IRQ 0 (Timer), IRQ 1 (Keyboard), and IRQ 2 (Cascade to PIC2):
+        // PIC1 mask: 0b1111_1000 = 0xF8 (unmask IRQ0 Timer, IRQ1 Keyboard, IRQ2 Cascade)
+        // PIC2 mask: 0b0011_1111 = 0x3F (unmask IRQ14 Primary ATA, IRQ15 Secondary ATA)
+        interrupts::PICS.lock().write_masks(0b1111_1000, 0b0011_1111);
+    }
     interrupts::init_pit(100); // 100 Hz timer tick (10 ms period)
     interrupts::init_ps2_keyboard(); // Enable bare-metal PS/2 keyboard & Scancode Set 1 translation
     x86_64::instructions::interrupts::enable();
