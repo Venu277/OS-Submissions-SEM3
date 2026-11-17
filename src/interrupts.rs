@@ -84,9 +84,127 @@ impl ScancodeQueue {
 
 pub static SCANCODE_QUEUE: ScancodeQueue = ScancodeQueue::new();
 
-/// Pop a pending keyboard scancode from the lock-free queue.
+/// Pop a pending keyboard scancode from the lock-free queue or hardware port 0x60.
 pub fn pop_scancode() -> Option<u8> {
-    SCANCODE_QUEUE.pop()
+    if let Some(scancode) = SCANCODE_QUEUE.pop() {
+        Some(scancode)
+    } else {
+        poll_hardware_scancode()
+    }
+}
+
+/// Direct polling of i8042 data port 0x60.
+/// Returns `Some(scancode)` if output buffer is full (status bit 0 set) and data is from the keyboard, else `None`.
+pub fn poll_hardware_scancode() -> Option<u8> {
+    let mut status_port: Port<u8> = Port::new(0x64);
+    let mut data_port: Port<u8> = Port::new(0x60);
+
+    unsafe {
+        let status = status_port.read();
+        // Bit 0: Output buffer full (data waiting to be read from 0x60)
+        if (status & 0x01) != 0 {
+            let scancode = data_port.read();
+            // Bit 5: 0 = keyboard (first PS/2 port), 1 = auxiliary device (mouse / touchpad)
+            if (status & 0x20) == 0 {
+                Some(scancode)
+            } else {
+                None // Discard mouse packet bytes
+            }
+        } else {
+            None
+        }
+    }
+}
+
+/// Initialize i8042 PS/2 controller on bare-metal systems.
+///
+/// On pure UEFI Class 3 systems (e.g. 13th Gen Intel Core laptops like HP Pavilion 15),
+/// UEFI firmware leaves the i8042 controller disabled or unconfigured upon ExitBootServices.
+/// This function:
+/// 1. Flushes stale bytes from the output buffer.
+/// 2. Enables the first PS/2 port (keyboard).
+/// 3. Configures the Controller Configuration Byte (CCB) to enable IRQ 1, enable the port clock,
+///    and enable automatic hardware translation to Scancode Set 1.
+/// 4. Sends command 0xF4 to the keyboard to enable keyboard scanning.
+pub fn init_ps2_keyboard() {
+    let mut status_cmd: Port<u8> = Port::new(0x64);
+    let mut data: Port<u8> = Port::new(0x60);
+
+    unsafe {
+        // Step 1: Flush stale bytes from the output buffer (up to 64 bytes)
+        for _ in 0..64 {
+            if (status_cmd.read() & 0x01) == 0 {
+                break;
+            }
+            let _ = data.read();
+        }
+
+        // Step 2: Enable the first PS/2 port (command 0xAE)
+        let mut timeout = 10000usize;
+        while (status_cmd.read() & 0x02) != 0 && timeout > 0 {
+            timeout -= 1;
+            core::hint::spin_loop();
+        }
+        status_cmd.write(0xAE);
+
+        // Step 3: Read Controller Configuration Byte (CCB) via command 0x20
+        timeout = 10000;
+        while (status_cmd.read() & 0x02) != 0 && timeout > 0 {
+            timeout -= 1;
+            core::hint::spin_loop();
+        }
+        status_cmd.write(0x20);
+
+        timeout = 10000;
+        while (status_cmd.read() & 0x01) == 0 && timeout > 0 {
+            timeout -= 1;
+            core::hint::spin_loop();
+        }
+        let config = if timeout > 0 {
+            data.read()
+        } else {
+            0b01000101 // Default fallback: translation + sysflag + IRQ1
+        };
+
+        // Step 4: Modify CCB:
+        // - Set bit 0 (0x01): First PS/2 port interrupt enabled
+        // - Clear bit 4 (0x10): First PS/2 port clock enabled (0 = enabled)
+        // - Set bit 6 (0x40): First PS/2 port translation to Scancode Set 1 enabled
+        // - Retain bit 2 (0x04): System flag
+        let new_config = (config | 0x01 | 0x40) & !0x10;
+
+        timeout = 10000;
+        while (status_cmd.read() & 0x02) != 0 && timeout > 0 {
+            timeout -= 1;
+            core::hint::spin_loop();
+        }
+        status_cmd.write(0x60); // Write CCB command
+
+        timeout = 10000;
+        while (status_cmd.read() & 0x02) != 0 && timeout > 0 {
+            timeout -= 1;
+            core::hint::spin_loop();
+        }
+        data.write(new_config);
+
+        // Step 5: Send Enable Scanning command (0xF4) to the keyboard
+        timeout = 10000;
+        while (status_cmd.read() & 0x02) != 0 && timeout > 0 {
+            timeout -= 1;
+            core::hint::spin_loop();
+        }
+        data.write(0xF4);
+
+        // Wait briefly for ACK (0xFA) and drain it so it doesn't appear as a keypress
+        timeout = 10000;
+        while (status_cmd.read() & 0x01) == 0 && timeout > 0 {
+            timeout -= 1;
+            core::hint::spin_loop();
+        }
+        if timeout > 0 {
+            let _ = data.read();
+        }
+    }
 }
 
 // ---------- Timer Tick Accounting ----------
@@ -252,6 +370,18 @@ extern "x86-interrupt" fn timer_interrupt_handler(_stack_frame: InterruptStackFr
     unsafe {
         PICS.lock()
             .notify_end_of_interrupt(InterruptIndex::Timer.as_u8());
+    }
+
+    // Hardware scancode polling fallback for bare-metal UEFI systems:
+    // If PIC IRQ 1 is masked or not routed by laptop UEFI firmware, poll port 0x60 directly.
+    for _ in 0..16 {
+        match poll_hardware_scancode() {
+            Some(scancode) => {
+                let _ = SCANCODE_QUEUE.push(scancode);
+                crate::task::keyboard::wake_keyboard_task();
+            }
+            None => break,
+        }
     }
 
     // CA-6 Layer 6: Timer-driven preemptive scheduling

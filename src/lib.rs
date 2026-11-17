@@ -36,12 +36,13 @@ pub mod sync;
 pub mod task;
 pub mod vga_buffer;
 
-/// Initialize kernel CPU structures: GDT, IDT, PIC, PIT timer, and enable interrupts.
+/// Initialize kernel CPU structures: GDT, IDT, PIC, PIT timer, i8042 PS/2 keyboard, and enable interrupts.
 pub fn init() {
     gdt::init();
     interrupts::init_idt();
     unsafe { interrupts::PICS.lock().initialize() };
     interrupts::init_pit(100); // 100 Hz timer tick (10 ms period)
+    interrupts::init_ps2_keyboard(); // Enable bare-metal PS/2 keyboard & Scancode Set 1 translation
     x86_64::instructions::interrupts::enable();
 }
 
