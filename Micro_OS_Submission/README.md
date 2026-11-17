@@ -102,18 +102,7 @@ Micro_OS_Submission/
 
 ## CA-6 Rubric & Verification Matrix
 
-VenOS fulfills all requirements across the **15 Marks Grading Rubric**:
 
-| Category | Marks | Target Requirements | Verification Evidence | Status |
-|:---|:---:|:---|:---|:---:|
-| **1. Architecture & Design** | **2** | 10-layer architecture, modular design, clean separation. | Complete 10-layer implementation, Mermaid diagrams in [ARCHITECTURE.md](docs/ARCHITECTURE.md). | **FULL (2/2)** |
-| **2. Rust Implementation Quality** | **4** | Idiomatic Rust, memory safety, minimal audited `unsafe`. | Type-safe abstractions, zero-cost RAII guards, audited unsafe log in [UNSAFE_AUDIT.md](docs/UNSAFE_AUDIT.md). | **FULL (4/4)** |
-| **3. Core OS Functionality** | **3** | Boot, logging, task abstraction, ready queue, scheduler, locks. | AMD64 assembly `switch_context`, 100 Hz PIT preemption, dual memory allocators. | **FULL (3/3)** |
-| **4. Testing & Validation** | **2** | TC1–TC6 mandatory tests, integration test suite, failure cases. | 83/83 passing tests across 17 test targets; live in-kernel TC1–TC6 suite (`src/scheduler/tc.rs`). | **FULL (2/2)** |
-| **5. Evidence & Performance** | **2** | Hardware trace captures, Python data parser, latency plots. | 569 machine events parsed by Python 3.11, 4 publication plots in `results/plots/`. | **FULL (2/2)** |
-| **6. Track Specialization** | **1** | Track C: Concurrency Engineering (deadlock prevention & contention). | Strict lock ranking eliminating Coffman Condition 4 + atomic contention counters. | **FULL (1/1)** |
-| **7. Documentation & Demo** | **1** | Step-by-step reports, final report, viva preparation sheet, CLI. | 15 step reports (`V0`..`V14`), [CA6_FINAL_REPORT.md](docs/CA6_FINAL_REPORT.md), [VIVA_PREPARATION.md](docs/VIVA_PREPARATION.md). | **FULL (1/1)** |
-| **TOTAL** | **15** | Comprehensive Compliance across all 45 Sections | **15 / 15 Marks** | **PASS** |
 
 ### Mandatory Test Cases (TC1 – TC6)
 - **TC1 (Two Tasks):** Distinct monotonic IDs, separate 16 KiB stacks, 16-byte alignment, FIFO queue order (`tests/kthread_ready_queue.rs`).
