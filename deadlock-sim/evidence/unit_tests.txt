@@ -1,0 +1,30 @@
+﻿py : test_release_returns_resources (test_banker.TestBanker.test_release_returns_resources) ... ok
+At line:1 char:1
++ py -3 -m unittest discover -s tests -v 2>&1 | Out-File -Encoding utf8 ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (test_release_re...sources) ... ok:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+test_request_denied_when_not_enough_available 
+(test_banker.TestBanker.test_request_denied_when_not_enough_available) ... ok
+test_request_denied_when_unsafe_and_state_restored 
+(test_banker.TestBanker.test_request_denied_when_unsafe_and_state_restored) ... ok
+test_request_granted_when_safe (test_banker.TestBanker.test_request_granted_when_safe) ... ok
+test_safe_sequence_matches_textbook (test_banker.TestBanker.test_safe_sequence_matches_textbook) ... ok
+test_circular_wait_is_detected (test_detector.TestDetector.test_circular_wait_is_detected) ... ok
+test_no_deadlock_when_resources_can_be_freed 
+(test_detector.TestDetector.test_no_deadlock_when_resources_can_be_freed) ... ok
+test_victim_is_process_holding_fewest_units 
+(test_detector.TestDetector.test_victim_is_process_holding_fewest_units) ... ok
+test_avoidance_completes_low_contention (test_simulator.TestSimulator.test_avoidance_completes_low_contention) ... 
+ok
+test_avoidance_never_deadlocks (test_simulator.TestSimulator.test_avoidance_never_deadlocks) ... ok
+test_detection_accounts_for_every_process (test_simulator.TestSimulator.test_detection_accounts_for_every_process) 
+... ok
+test_invalid_strategy_rejected (test_simulator.TestSimulator.test_invalid_strategy_rejected) ... ok
+test_same_seed_gives_same_result (test_simulator.TestSimulator.test_same_seed_gives_same_result) ... ok
+
+----------------------------------------------------------------------
+Ran 13 tests in 0.024s
+
+OK
