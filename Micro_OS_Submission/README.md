@@ -4,7 +4,7 @@
   <img src="results/plots/trace_timeline.png" alt="VenOS Trace Timeline" width="750"/>
 </p>
 
-> **VenOS** is a modular, high-reliability 64-bit operating system kernel developed from scratch in safe systems Rust for x86_64 processors. It is engineered to boot both in virtualized environments (QEMU/OVMF) and directly on **real bare-metal laptop hardware** (verified on HP Pavilion 15 with 13th Gen Intel Core i5-1335U).
+> **VenOS** is a modular, high-reliability 64-bit operating system kernel developed from scratch in safe systems Rust for x86_64 processors. It is engineered to boot both in virtualized environments (QEMU/OVMF) and directly on **real bare-metal laptop hardware** (verified on HP Pavilion 14 with 13th Gen Intel Core i5-1335U).
 >
 > Designed in full compliance with the university **CA-6 Flagship Engineering Project Specification (15 / 15 Marks)**, VenOS provides complete architectural visibility into modern OS mechanisms: UEFI Long Mode boot, GOP framebuffer rendering, preemptive scheduling, low-level assembly context switching, hand-written memory allocators, and mathematical deadlock elimination via strict lock hierarchies (**Track C: Concurrency Specialization**).
 
