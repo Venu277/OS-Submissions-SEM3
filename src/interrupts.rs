@@ -101,9 +101,17 @@ pub fn poll_hardware_scancode() -> Option<u8> {
 
     unsafe {
         let status = status_port.read();
+        // 0xFF indicates floating bus / unpopulated PS/2 controller
+        if status == 0xFF {
+            return None;
+        }
         // Bit 0: Output buffer full (data waiting to be read from 0x60)
         if (status & 0x01) != 0 {
             let scancode = data_port.read();
+            // Discard 0x00 and 0xFF invalid/error scancodes
+            if scancode == 0x00 || scancode == 0xFF {
+                return None;
+            }
             // Bit 5: 0 = keyboard (first PS/2 port), 1 = auxiliary device (mouse / touchpad)
             if (status & 0x20) == 0 {
                 Some(scancode)
@@ -384,12 +392,15 @@ extern "x86-interrupt" fn timer_interrupt_handler(_stack_frame: InterruptStackFr
         }
     }
 
-    // Wake console input stream if serial byte is waiting
-    unsafe {
+    // Wake console input stream if serial byte is waiting on a real UART
+    if crate::serial::is_serial_available() {
         let mut line_sts: x86_64::instructions::port::PortReadOnly<u8> =
             x86_64::instructions::port::PortReadOnly::new(0x3FD);
-        if (line_sts.read() & 0x01) != 0 {
-            crate::task::keyboard::wake_keyboard_task();
+        unsafe {
+            let status = line_sts.read();
+            if status != 0xFF && (status & 0x01) != 0 {
+                crate::task::keyboard::wake_keyboard_task();
+            }
         }
     }
 
@@ -401,11 +412,11 @@ extern "x86-interrupt" fn keyboard_interrupt_handler(_stack_frame: InterruptStac
     let mut port = Port::new(0x60); // PS/2 data port
     let scancode: u8 = unsafe { port.read() };
 
-    // Push into lock-free queue; non-blocking, deadlock-free
-    let _ = SCANCODE_QUEUE.push(scancode);
-
-    // Wake async keyboard executor task if sleeping
-    crate::task::keyboard::wake_keyboard_task();
+    // Only push valid scancodes (discard 0x00 and 0xFF floating bus reads)
+    if scancode != 0x00 && scancode != 0xFF {
+        let _ = SCANCODE_QUEUE.push(scancode);
+        crate::task::keyboard::wake_keyboard_task();
+    }
 
     unsafe {
         PICS.lock()

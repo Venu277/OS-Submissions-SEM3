@@ -41,11 +41,14 @@ impl InputStream {
                 // 1. Check UART serial port input first
                 if let Some(byte) = crate::serial::poll_serial_byte() {
                     let c = match byte {
-                        b'\r' | b'\n' => '\n',
-                        8 | 0x7F => '\x08',
-                        b => b as char,
+                        b'\r' | b'\n' => Some('\n'),
+                        8 | 0x7F => Some('\x08'),
+                        ascii if (0x20..=0x7E).contains(&ascii) => Some(ascii as char),
+                        _ => None,
                     };
-                    return Poll::Ready(c);
+                    if let Some(c) = c {
+                        return Poll::Ready(c);
+                    }
                 }
 
                 // 2. Check PS/2 keyboard scancodes
@@ -65,13 +68,16 @@ impl InputStream {
 
                 // 4. Re-check to eliminate race condition
                 if let Some(byte) = crate::serial::poll_serial_byte() {
-                    *waker_guard = None;
                     let c = match byte {
-                        b'\r' | b'\n' => '\n',
-                        8 | 0x7F => '\x08',
-                        b => b as char,
+                        b'\r' | b'\n' => Some('\n'),
+                        8 | 0x7F => Some('\x08'),
+                        ascii if (0x20..=0x7E).contains(&ascii) => Some(ascii as char),
+                        _ => None,
                     };
-                    return Poll::Ready(c);
+                    if let Some(c) = c {
+                        *waker_guard = None;
+                        return Poll::Ready(c);
+                    }
                 }
 
                 while let Some(scancode) = crate::interrupts::pop_scancode() {
