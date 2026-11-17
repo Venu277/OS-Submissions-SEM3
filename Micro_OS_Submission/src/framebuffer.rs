@@ -272,6 +272,24 @@ impl FrameBufferWriter {
         }
     }
 
+    /// Draw or clear a solid underline text cursor at the current cursor position.
+    pub fn set_cursor_visible(&mut self, visible: bool) {
+        let eff_width = self.font_width * self.font_scale;
+        let eff_height = self.font_height * self.font_scale;
+        if self.x_pos + eff_width > self.info.width || self.y_pos + eff_height > self.info.height {
+            return;
+        }
+        let color = if visible { self.text_color } else { self.bg_color };
+        // Draw bottom 20% of character cell as a solid cursor underline
+        let cursor_height = (eff_height / 5).max(2);
+        let start_y = self.y_pos + eff_height.saturating_sub(cursor_height);
+        for y in start_y..(self.y_pos + eff_height) {
+            for x in self.x_pos..(self.x_pos + eff_width) {
+                self.write_raw_pixel(x, y, color);
+            }
+        }
+    }
+
     /// Scroll display content upwards by one line height and blank the exposed bottom line.
     fn scroll_up(&mut self) {
         let eff_height = self.font_height * self.font_scale;
@@ -398,6 +416,16 @@ pub fn display_summary() -> Option<(usize, usize, usize, AspectRatio, usize, usi
             w.pixel_format_name(),
         )
     })
+}
+
+/// Draw or clear the graphical text console cursor at the current position.
+pub fn set_cursor_visible(visible: bool) {
+    use x86_64::instructions::interrupts;
+    interrupts::without_interrupts(|| {
+        if let Some(ref mut writer) = *FRAMEBUFFER_WRITER.lock() {
+            writer.set_cursor_visible(visible);
+        }
+    });
 }
 
 /// Print formatted text to both the UEFI Framebuffer console and the UART serial port.

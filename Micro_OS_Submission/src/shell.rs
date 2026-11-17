@@ -36,6 +36,7 @@ pub async fn run_shell() {
     let mut line_buffer = String::new();
 
     print_prompt();
+    crate::framebuffer::set_cursor_visible(true);
 
     loop {
         let scancode = scancodes.next_scancode().await;
@@ -44,24 +45,30 @@ pub async fn run_shell() {
                 match key {
                     DecodedKey::Unicode(c) => match c {
                         '\n' | '\r' => {
+                            crate::framebuffer::set_cursor_visible(false);
                             println!();
                             serial_println!();
                             execute_command(&line_buffer);
                             line_buffer.clear();
                             print_prompt();
+                            crate::framebuffer::set_cursor_visible(true);
                         }
                         '\x08' => {
                             // Backspace
                             if !line_buffer.is_empty() {
+                                crate::framebuffer::set_cursor_visible(false);
                                 line_buffer.pop();
-                                crate::vga_buffer::backspace();
+                                print!("\x08");
                                 serial_print!("\x08 \x08");
+                                crate::framebuffer::set_cursor_visible(true);
                             }
                         }
                         c => {
+                            crate::framebuffer::set_cursor_visible(false);
                             line_buffer.push(c);
                             print!("{}", c);
                             serial_print!("{}", c);
+                            crate::framebuffer::set_cursor_visible(true);
                         }
                     },
                     DecodedKey::RawKey(_) => {}
