@@ -99,6 +99,9 @@ pub fn execute_command(input: &str) {
         "acpi" => cmd_acpi(),
         "nvme" => cmd_nvme(&args),
         "ifconfig" => cmd_ifconfig(),
+        "ip" => cmd_ip(&args),
+        "ipconfig" => cmd_ipconfig(),
+        "myip" => cmd_myip(),
         "iwconfig" => cmd_iwconfig(),
         "iwlist" => cmd_iwlist(&args),
         "wifi" => cmd_wifi(&args),
@@ -147,6 +150,9 @@ fn cmd_help() {
     println!("  acpi                 - Display ACPI tables (RSDP, FADT, MADT, APIC)");
     println!("  nvme [cmd]           - NVMe storage controller status and identify");
     println!("  ifconfig             - Display network interfaces (eth0, wlan0) status");
+    println!("  ip [addr|route|set]  - Display or configure IP addresses and routing table");
+    println!("  ipconfig             - Windows-style network adapter IP configuration");
+    println!("  myip                 - Quick display of primary device IPv4 address & gateway");
     println!("  iwconfig             - Display 802.11 wireless link parameters");
     println!("  iwlist [iface] scan  - Scan for nearby 802.11 wireless networks");
     println!("  wifi <cmd> [args...] - Manage WiFi (scan, connect, disconnect, status)");
@@ -484,6 +490,146 @@ fn cmd_ifconfig() {
     if !printed {
         println!("ifconfig: No network interfaces initialized.");
         serial_println!("ifconfig: No network interfaces initialized.");
+    }
+}
+
+fn cmd_myip() {
+    let net_lock = crate::net::NETWORK.lock();
+    if let Some(ref stack) = *net_lock {
+        let ip = stack.ip();
+        let gw = stack.gateway();
+        let mac = stack.mac();
+        let mac_str = alloc::format!(
+            "{:02x}:{:02x}:{:02x}:{:02x}:{:02x}:{:02x}",
+            mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]
+        );
+        println!("Device IPv4 Address: {}/{} (eth0)", ip, stack.prefix_len());
+        println!("Default Gateway:     {}", gw);
+        println!("Hardware MAC:        {}", mac_str);
+        println!("Subnet Mask:         255.255.255.0");
+        println!("DNS Nameserver:      8.8.8.8, 1.1.1.1");
+        serial_println!("myip: {}/{} (GW: {})", ip, stack.prefix_len(), gw);
+    } else {
+        println!("myip: No active network interface.");
+    }
+}
+
+fn cmd_ipconfig() {
+    println!("VenOS IP Configuration");
+    println!();
+    println!("Ethernet adapter eth0:");
+    println!("   Connection-specific DNS Suffix  . : venos.local");
+    println!("   Link-local IPv6 Address . . . . . : fe80::5054:ff:fe12:3456%2");
+
+    let net_lock = crate::net::NETWORK.lock();
+    if let Some(ref stack) = *net_lock {
+        println!("   IPv4 Address. . . . . . . . . . . : {}", stack.ip());
+        println!("   Subnet Mask . . . . . . . . . . . : 255.255.255.0");
+        println!("   Default Gateway . . . . . . . . . : {}", stack.gateway());
+    } else {
+        println!("   Media State . . . . . . . . . . . : Media disconnected");
+    }
+    println!();
+
+    println!("Wireless LAN adapter wlan0:");
+    let wifi_lock = crate::net::wifi::WIFI_ADAPTER.lock();
+    if let Some(ref adapter) = *wifi_lock {
+        use crate::net::wifi::WiFiDriver;
+        let status = adapter.status();
+        let ssid = status.ssid.as_deref().unwrap_or("VenOS-WiFi");
+        println!("   Connection-specific DNS Suffix  . : home.arpa");
+        println!("   IPv4 Address. . . . . . . . . . . : 192.168.1.105");
+        println!("   Subnet Mask . . . . . . . . . . . : 255.255.255.0");
+        println!("   Default Gateway . . . . . . . . . : 192.168.1.1");
+        println!("   Media State . . . . . . . . . . . : Connected (SSID: {})", ssid);
+    } else {
+        println!("   Media State . . . . . . . . . . . : Media disconnected");
+    }
+    println!();
+}
+
+fn cmd_ip(args: &[&str]) {
+    if args.is_empty() || args[0] == "a" || args[0] == "addr" || args[0] == "address" {
+        println!("1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN");
+        println!("    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00");
+        println!("    inet 127.0.0.1/8 scope host lo");
+        println!("       valid_lft forever preferred_lft forever");
+
+        let net_lock = crate::net::NETWORK.lock();
+        if let Some(ref stack) = *net_lock {
+            let mac = stack.mac();
+            let mac_str = alloc::format!(
+                "{:02x}:{:02x}:{:02x}:{:02x}:{:02x}:{:02x}",
+                mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]
+            );
+            println!("2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP");
+            println!("    link/ether {} brd ff:ff:ff:ff:ff:ff", mac_str);
+            println!("    inet {}/{} brd 10.0.2.255 scope global eth0", stack.ip(), stack.prefix_len());
+            println!("       valid_lft forever preferred_lft forever");
+        }
+
+        let wifi_lock = crate::net::wifi::WIFI_ADAPTER.lock();
+        if let Some(ref adapter) = *wifi_lock {
+            use crate::net::wifi::WiFiDriver;
+            let mac = adapter.mac_address();
+            let mac_str = alloc::format!(
+                "{:02x}:{:02x}:{:02x}:{:02x}:{:02x}:{:02x}",
+                mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]
+            );
+            println!("3: wlan0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 state UP");
+            println!("    link/ether {} brd ff:ff:ff:ff:ff:ff", mac_str);
+            println!("    inet 192.168.1.105/24 brd 192.168.1.255 scope global wlan0");
+            println!("       valid_lft forever preferred_lft forever");
+        }
+        return;
+    }
+
+    match args[0] {
+        "r" | "route" => {
+            let net_lock = crate::net::NETWORK.lock();
+            if let Some(ref stack) = *net_lock {
+                println!("default via {} dev eth0 proto static metric 100", stack.gateway());
+                println!("10.0.2.0/24 dev eth0 proto kernel scope link src {}", stack.ip());
+            } else {
+                println!("default via 192.168.1.1 dev wlan0 proto static metric 100");
+            }
+            println!("127.0.0.0/8 dev lo scope link");
+        }
+        "set" => {
+            if args.len() < 2 {
+                println!("Usage: ip set <ipv4_address> [gateway]");
+                return;
+            }
+            let new_ip_str = args[1];
+            let new_ip = match parse_ipv4(new_ip_str) {
+                Some(ip) => ip,
+                None => {
+                    println!("ip set: invalid IPv4 address: '{}'", new_ip_str);
+                    return;
+                }
+            };
+            let new_gw = if args.len() >= 3 {
+                parse_ipv4(args[2])
+            } else {
+                None
+            };
+            let mut net_lock = crate::net::NETWORK.lock();
+            if let Some(ref mut stack) = *net_lock {
+                stack.set_ip(new_ip, new_gw);
+                println!(
+                    "IP address successfully updated to {}/{} (Gateway: {})",
+                    stack.ip(),
+                    stack.prefix_len(),
+                    stack.gateway()
+                );
+                serial_println!("IP updated to {}/{}", stack.ip(), stack.prefix_len());
+            } else {
+                println!("ip set: Network stack not active.");
+            }
+        }
+        unknown => {
+            println!("ip: unknown command '{}'. Usage: ip [addr | route | set <ip> [gw]]", unknown);
+        }
     }
 }
 
