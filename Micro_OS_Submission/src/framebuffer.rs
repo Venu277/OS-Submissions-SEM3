@@ -218,7 +218,12 @@ impl FrameBufferWriter {
             '\n' => self.new_line(),
             '\r' => self.carriage_return(),
             '\x08' => self.backspace(),
+            '\0' => {}
             other => {
+                // Ignore non-printable control characters (except tab)
+                if (other as u32) < 0x20 && other != '\t' {
+                    return;
+                }
                 if self.x_pos + eff_width > self.info.width {
                     self.new_line();
                 }
