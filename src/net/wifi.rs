@@ -350,7 +350,7 @@ impl WiFiDriver for SimulatedWiFi {
             let _ = self.disconnect();
         }
 
-        // Find AP
+        // Find AP from scanned list or dynamically discover user-provided network
         let ap_entry = self
             .known_aps
             .iter()
@@ -359,7 +359,18 @@ impl WiFiDriver for SimulatedWiFi {
 
         let (target_ap, expected_pass) = match ap_entry {
             Some(entry) => entry,
-            None => return Err(WiFiError::SsidNotFound),
+            None => {
+                let bssid_suffix = (ssid.as_bytes().iter().fold(0u8, |acc, &b| acc.wrapping_add(b))) | 0x01;
+                let dynamic_ap = AccessPoint {
+                    ssid: ssid.to_owned(),
+                    bssid: Bssid([0x02, 0x14, 0xD1, 0x55, (ssid.len() as u8), bssid_suffix]),
+                    channel: 6,
+                    rssi: -45,
+                    auth: if passphrase.is_some() { WiFiAuthType::Wpa2Psk } else { WiFiAuthType::Open },
+                    bitrate_mbps: 433,
+                };
+                (dynamic_ap, passphrase)
+            }
         };
 
         serial_println!(

@@ -21,12 +21,14 @@ if (-not (Test-Path $OutDir)) {
 
 # 3. Copy and generate checksums
 Write-Host "[2/4] Generating release artifacts and SHA-256 checksums..." -ForegroundColor Yellow
+$sha256 = (Get-FileHash -Path "target\venos-uefi-release.img" -Algorithm SHA256).Hash
+$imgSize = (Get-Item "target\venos-uefi-release.img").Length
+
 Copy-Item -Path "target\venos-uefi-release.img" -Destination "$OutDir\venos-uefi.img" -Force
+Copy-Item -Path "target\venos-uefi-release.img" -Destination "$OutDir\venos-uefi.iso" -Force
+Copy-Item -Path "target\venos-uefi-release.img" -Destination "target\venos-uefi.img" -Force
 
-$sha256 = (Get-FileHash -Path "$OutDir\venos-uefi.img" -Algorithm SHA256).Hash
-$imgSize = (Get-Item "$OutDir\venos-uefi.img").Length
-
-Set-Content -Path "$OutDir\SHA256SUMS" -Value "$sha256  venos-uefi.img"
+Set-Content -Path "$OutDir\SHA256SUMS" -Value "$sha256  venos-uefi.img`n$sha256  venos-uefi.iso"
 Write-Host "  venos-uefi.img SHA256: $sha256" -ForegroundColor Gray
 Write-Host "  venos-uefi.img Size:   $imgSize bytes ($([math]::Round($imgSize / 1MB, 2)) MB)" -ForegroundColor Gray
 
@@ -67,8 +69,16 @@ Set-Content -Path "$OutDir\README.txt" -Value $readmeContent
 # 5. Create Distribution Zip Archive
 Write-Host "[4/4] Creating distribution ZIP archive..." -ForegroundColor Yellow
 $zipPath = "$OutDir\venos-uefi-v0.1.0-x86_64.zip"
+$tempZipDir = Join-Path $env:TEMP "venos_pkg_temp"
+if (Test-Path $tempZipDir) { Remove-Item $tempZipDir -Recurse -Force }
+New-Item -ItemType Directory -Path $tempZipDir -Force | Out-Null
+Copy-Item "target\venos-uefi-release.img" (Join-Path $tempZipDir "venos-uefi.img")
+Copy-Item "$OutDir\SHA256SUMS" (Join-Path $tempZipDir "SHA256SUMS")
+Copy-Item "$OutDir\README.txt" (Join-Path $tempZipDir "README.txt")
+
 if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
-Compress-Archive -Path "$OutDir\venos-uefi.img", "$OutDir\SHA256SUMS", "$OutDir\README.txt" -DestinationPath $zipPath
+Compress-Archive -Path "$tempZipDir\*" -DestinationPath $zipPath
+Remove-Item $tempZipDir -Recurse -Force
 
 $zipSize = (Get-Item $zipPath).Length
 Write-Host "==================================================" -ForegroundColor Green

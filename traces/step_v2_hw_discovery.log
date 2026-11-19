@@ -10,24 +10,24 @@ TRACE: exiting boot services
 TRACE: switching to new level 4 table
 INFO : New page table at: PhysFrame[4KiB](0x101000)
 INFO : Elf file loaded at Pointer {
-    addr: 0x0000000005457000,
-    metadata: 10083984,
+    addr: 0x0000000006150000,
+    metadata: 666880,
 }
 INFO : virtual_address_offset: 0x0
-INFO : Handling Segment: Ph64(ProgramHeader64 { type_: Ok(Load), flags: Flags(4), offset: 0, virtual_addr: 200000, physical_addr: 200000, file_size: 224e4, mem_size: 224e4, align: 1000 })
-INFO : Handling Segment: Ph64(ProgramHeader64 { type_: Ok(Load), flags: Flags(5), offset: 224f0, virtual_addr: 2234f0, physical_addr: 2234f0, file_size: 115ce1, mem_size: 115ce1, align: 1000 })
-INFO : Handling Segment: Ph64(ProgramHeader64 { type_: Ok(Load), flags: Flags(6), offset: 1381d8, virtual_addr: 33a1d8, physical_addr: 33a1d8, file_size: 1e0e0, mem_size: 1ee28, align: 1000 })
+INFO : Handling Segment: Ph64(ProgramHeader64 { type_: Ok(Load), flags: Flags(4), offset: 0, virtual_addr: 200000, physical_addr: 200000, file_size: 1632c, mem_size: 1632c, align: 1000 })
+INFO : Handling Segment: Ph64(ProgramHeader64 { type_: Ok(Load), flags: Flags(5), offset: 16330, virtual_addr: 217330, physical_addr: 217330, file_size: 628af, mem_size: 628af, align: 1000 })
+INFO : Handling Segment: Ph64(ProgramHeader64 { type_: Ok(Load), flags: Flags(6), offset: 78be0, virtual_addr: 27abe0, physical_addr: 27abe0, file_size: ec48, mem_size: f420, align: 1000 })
 INFO : Mapping bss section
-INFO : Handling Segment: Ph64(ProgramHeader64 { type_: Ok(Load), flags: Flags(6), offset: 1562c0, virtual_addr: 3592c0, physical_addr: 3592c0, file_size: 590, mem_size: 28fa8, align: 1000 })
+INFO : Handling Segment: Ph64(ProgramHeader64 { type_: Ok(Load), flags: Flags(6), offset: 87828, virtual_addr: 28a828, physical_addr: 28a828, file_size: 566, mem_size: 2ea38, align: 1000 })
 INFO : Mapping bss section
-INFO : Entry point at: 0x22a800
-INFO : Creating GDT at PhysAddr(0x148000)
+INFO : Entry point at: 0x219390
+INFO : Creating GDT at PhysAddr(0x14e000)
 INFO : Map framebuffer
 INFO : Map physical memory
 INFO : Allocate bootinfo
 INFO : Create Memory Map
 INFO : Create bootinfo
-INFO : Jumping to kernel entry point at VirtAddr(0x22a800)
+INFO : Jumping to kernel entry point at VirtAddr(0x219390)
 ==================================================
    VenOS v0.1 - x86_64 Hobby Operating System
    UEFI 64-bit Bootloader | GOP Framebuffer Console
@@ -36,7 +36,7 @@ Kernel booted successfully via UEFI!
 Serial port online.
 Display: 1280x800 [16:10 (Productivity Widescreen)], 142x50 text grid (1x scale)
 CPU: QEMU Virtual CPU version 2.5+ (1 logical cores)
-Memory: 12415 MiB total, 107 MiB usable (Kernel Heap: 1724 KiB)
+Memory: 12415 MiB total, 116 MiB usable (Kernel Heap: 1868 KiB)
 UEFI: ACPI RSDP table provided at physical 0x777e014
 ACPI: Valid RSDP provided by UEFI BootInfo at phys 0x777e014
 ACPI: RSDP found at phys 0x777e014 (Revision 2, OEM: 'BOCHS')
@@ -48,16 +48,16 @@ MicroFS successfully formatted.
 NVMe: No physical PCIe NVMe card found. Initializing laptop 512GB hardware profile.
 [nvme0] NVMe v1.4 Device: Model='VenOS NVMe RAM Block Device [SIMULATED (Software Model)]', Serial='NVME-VENOS-SIM-2026', FW='1B2QGXA7', Capacity=476 GB (1000000000 sectors @ 512B)
 Intel e1000 NIC detected on PCI bus 00:03.0 (vendor=8086, device=100e)
-e1000: rx_desc_phys=PhysAddr(0x110000), tx_desc_phys=PhysAddr(0x110200)
+e1000: rx_desc_phys=PhysAddr(0x108000), tx_desc_phys=PhysAddr(0x108200)
 e1000 initialized! MAC: 52:54:00:12:34:56
 LAN Networking & smoltcp stack initialized (IP: 10.0.2.15/24, GW: 10.0.2.2).
 [wlan0] 802.11 Wireless Subsystem initialized (MAC: 52:54:00:12:34:56, bridged via e1000)
 dpkg: No existing status database found; initialized empty database.
 apt: Package manager initialized (6 packages available)
 snap: Snap Store initialized (5 packages available)
-BOOT_TIME_MS=827.375 (TSC ticks=2060181130, freq=2490 MHz)
-Boot time to shell: 827.375 ms (calibrated @ 2490 MHz)
-System Clock: 2026-11-16 16:49:55 UTC
+BOOT_TIME_MS=65.155 (TSC ticks=162767515, freq=2498 MHz)
+Boot time to shell: 65.155 ms (calibrated @ 2498 MHz)
+System Clock: 2026-11-17 06:59:38 UTC
 Type 'help' for available commands.
 
 venos:/> venos:/> 
