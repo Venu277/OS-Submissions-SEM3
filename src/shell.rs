@@ -20,7 +20,6 @@ pub fn print_prompt() {
     let cwd = VFS.lock().current_path.clone();
     let prompt_str = if cwd.is_empty() { "/" } else { &cwd };
     print!("venos:{}> ", prompt_str);
-    serial_print!("venos:{}> ", prompt_str);
 }
 
 /// Asynchronous interactive shell loop supporting both PS/2 keyboard and UART serial.
@@ -37,7 +36,6 @@ pub async fn run_shell() {
             '\n' | '\r' => {
                 crate::framebuffer::set_cursor_visible(false);
                 println!();
-                serial_println!();
                 execute_command(&line_buffer);
                 line_buffer.clear();
                 print_prompt();
@@ -49,7 +47,6 @@ pub async fn run_shell() {
                     crate::framebuffer::set_cursor_visible(false);
                     line_buffer.pop();
                     print!("\x08");
-                    serial_print!("\x08 \x08");
                     crate::framebuffer::set_cursor_visible(true);
                 }
             }
@@ -57,7 +54,6 @@ pub async fn run_shell() {
                 crate::framebuffer::set_cursor_visible(false);
                 line_buffer.push(c);
                 print!("{}", c);
-                serial_print!("{}", c);
                 crate::framebuffer::set_cursor_visible(true);
             }
         }

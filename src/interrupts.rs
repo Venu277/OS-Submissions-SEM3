@@ -84,13 +84,38 @@ impl ScancodeQueue {
 
 pub static SCANCODE_QUEUE: ScancodeQueue = ScancodeQueue::new();
 
-/// Pop a pending keyboard scancode from the lock-free queue or hardware port 0x60.
-pub fn pop_scancode() -> Option<u8> {
-    if let Some(scancode) = SCANCODE_QUEUE.pop() {
-        Some(scancode)
-    } else {
-        poll_hardware_scancode()
+static LAST_MAKE_SCANCODE: AtomicU8 = AtomicU8::new(0);
+static LAST_MAKE_TICK: AtomicU64 = AtomicU64::new(0);
+
+/// Push a scancode into the queue with hardware switch debouncing and latch duplicate suppression.
+pub fn push_scancode_filtered(scancode: u8) {
+    let now = timer_ticks();
+
+    // Check for make code vs break code (Scancode Set 1: make < 0x80, break >= 0x80)
+    if scancode < 0x80 {
+        // Debounce: discard exact duplicate make scancodes arriving within 30ms (3 ticks)
+        let last_scancode = LAST_MAKE_SCANCODE.load(Ordering::Relaxed);
+        let last_tick = LAST_MAKE_TICK.load(Ordering::Relaxed);
+        if scancode == last_scancode && now.saturating_sub(last_tick) < 3 {
+            return; // Discard duplicate bounce / double-read
+        }
+        LAST_MAKE_SCANCODE.store(scancode, Ordering::Relaxed);
+        LAST_MAKE_TICK.store(now, Ordering::Relaxed);
+    } else if scancode != 0xE0 {
+        // Break code: clear last make scancode if it matches the released key
+        let make_part = scancode & 0x7F;
+        if make_part == LAST_MAKE_SCANCODE.load(Ordering::Relaxed) {
+            LAST_MAKE_SCANCODE.store(0, Ordering::Relaxed);
+        }
     }
+
+    let _ = SCANCODE_QUEUE.push(scancode);
+    crate::task::keyboard::wake_keyboard_task();
+}
+
+/// Pop a pending keyboard scancode from the lock-free queue.
+pub fn pop_scancode() -> Option<u8> {
+    SCANCODE_QUEUE.pop()
 }
 
 /// Direct polling of i8042 data port 0x60.
@@ -107,16 +132,18 @@ pub fn poll_hardware_scancode() -> Option<u8> {
         }
         // Bit 0: Output buffer full (data waiting to be read from 0x60)
         if (status & 0x01) != 0 {
-            let scancode = data_port.read();
-            // Discard 0x00 and 0xFF invalid/error scancodes
-            if scancode == 0x00 || scancode == 0xFF {
-                return None;
-            }
             // Bit 5: 0 = keyboard (first PS/2 port), 1 = auxiliary device (mouse / touchpad)
             if (status & 0x20) == 0 {
-                Some(scancode)
+                let scancode = data_port.read();
+                // Discard 0x00 and 0xFF invalid/error scancodes
+                if scancode != 0x00 && scancode != 0xFF {
+                    Some(scancode)
+                } else {
+                    None
+                }
             } else {
-                None // Discard mouse packet bytes
+                let _ = data_port.read(); // Drain auxiliary device byte
+                None
             }
         } else {
             None
@@ -385,8 +412,7 @@ extern "x86-interrupt" fn timer_interrupt_handler(_stack_frame: InterruptStackFr
     for _ in 0..16 {
         match poll_hardware_scancode() {
             Some(scancode) => {
-                let _ = SCANCODE_QUEUE.push(scancode);
-                crate::task::keyboard::wake_keyboard_task();
+                push_scancode_filtered(scancode);
             }
             None => break,
         }
@@ -409,13 +435,16 @@ extern "x86-interrupt" fn timer_interrupt_handler(_stack_frame: InterruptStackFr
 }
 
 extern "x86-interrupt" fn keyboard_interrupt_handler(_stack_frame: InterruptStackFrame) {
-    let mut port = Port::new(0x60); // PS/2 data port
-    let scancode: u8 = unsafe { port.read() };
+    let mut status_port: Port<u8> = Port::new(0x64);
+    let status = unsafe { status_port.read() };
 
-    // Only push valid scancodes (discard 0x00 and 0xFF floating bus reads)
-    if scancode != 0x00 && scancode != 0xFF {
-        let _ = SCANCODE_QUEUE.push(scancode);
-        crate::task::keyboard::wake_keyboard_task();
+    // Only read data port if output buffer full (bit 0 == 1) and from keyboard (bit 5 == 0)
+    if status != 0xFF && (status & 0x01) != 0 && (status & 0x20) == 0 {
+        let mut data_port: Port<u8> = Port::new(0x60);
+        let scancode: u8 = unsafe { data_port.read() };
+        if scancode != 0x00 && scancode != 0xFF {
+            push_scancode_filtered(scancode);
+        }
     }
 
     unsafe {
