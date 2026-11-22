@@ -1,7 +1,7 @@
 # VenOS UEFI QEMU Runner Script
 param(
-    [string]$Image = "target\venos-uefi.img",
-    [string]$Display = "none",
+    [string]$Image = "dist\venos-uefi.img",
+    [string]$Display = "default",
     [switch]$NoReboot = $true
 )
 
